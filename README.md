@@ -11,7 +11,7 @@
 1. **Layer probing / 表征诊断**：冻结 BERT-large，只取某一层输出训练任务 head/probe classifier，用该层输出的任务指标判断该层表征是否足够可分。该方法能说明“某层表征含有多少任务信息”，但不能直接证明“后续层可以删除”或“该层一定最该保护”。若要证明删层，需要额外做 truncated BERT fine-tuning。
 2. **非线性近似基础**：已实现 GELU PWL 的 uniform 和 layer-wise 段数配置，并完成大量 SPR2、SemEval、NER、DEP、Coref 等实验。总体结论是：uniform 激进近似会损失明显，少量层保留更高精度常能恢复性能；但 layer probing 精确排序对 PWL 最优层的预测不稳定。后续非线性方法不应局限于 PWL，可继续比较 LUT-GELU、quantized LUT、分段二次、Softmax/LayerNorm 近似等硬件友好方案。
 3. **线性压缩基础**：已实现 FFN SVD low-rank 和 FFN neuron pruning 初探。uniform low-rank 呈现 rank 越高精度越好，但当前 probing-guided layer-wise low-rank 未体现稳定优势；neuron pruning 退化较明显。后续线性方法不应局限于当前 FFN 压缩，可考虑 layer-wise quantization、outlier-aware quantization、attention/FFN 结构化剪枝、低秩分解等方案。
-4. **量化主线已完成 uniform、单侧与双侧 outlier-aware PTQ 可行性验证**：NER、DEP、SemEval 的 uniform PTQ 已完成；SemEval 上 `W6A8 + W-outlier16`、`W8A6 + A-outlier16`、隔离后的 `W4A8 + W-outlier16`、`W8A4 + A-outlier16` 均能用少量 outlier16 恢复精度。naive `W4A4` 与 W4A4 单侧保护都会失效，但 `W4A4 + W/A-outlier16` 双侧保护已恢复到 `major=0.875900-0.880925`。下一步从 uniform ratio 可行性验证转向固定 calibration 阈值、逐层候选代价表和 probing-guided 同 BOP 预算分配。当前不做 QAT，也不把 probing 得分直接等同于逐层数值量化敏感度。
+4. **量化主线已完成 uniform、单侧与双侧 outlier-aware PTQ 可行性验证**：NER、DEP、SemEval 的 uniform PTQ 已完成；SemEval 上 `W6A8 + W-outlier16`、`W8A6 + A-outlier16`、隔离后的 `W4A8 + W-outlier16`、`W8A4 + A-outlier16` 均能用少量 outlier16 恢复精度。naive `W4A4` 与 W4A4 单侧保护都会失效；W4A4 双侧保护的 30 组完整比例网格已完成，最低成本达到 W8A8 validation 的点为 `W0.1%/A1%`（`major=0.876112`，BOP overhead `3.16%`），最高点为 `W2%/A6%`（`major=0.881629`，overhead `24.97%`）。下一步从统一比例可行性验证转向固定 calibration 阈值、逐层候选代价表和 probing-guided 同 BOP 预算分配。当前不做 QAT，也不把 probing 得分直接等同于逐层数值量化敏感度。
 
 目前算法主线已进一步收敛为：**以 probing-guided outlier-aware PTQ 加速线性计算，以 GELU 等特殊函数近似处理非线性计算，算法有效后再做协同硬件设计**。量化侧先用统一离群比例验证低比特精度恢复，再构建暂名 `L_PTH` 的目标函数，把层重建误差、算法计算负载和 fixed-layer probing 任务先验联合起来；最终在相同理论 BOP 预算下比较 uniform、cost-only、random、inverse-probing 与 probing-guided 分配。
 
@@ -54,7 +54,7 @@
 - 当前量化实验环境：租用 RTX 4090，项目路径 `/root/autodl-tmp/master-gra/my_project`，Python 环境 `/home/zhangzx/master-gra/conda-envs/graduate`；PyTorch `2.5.1+cu121`、Transformers `5.7.0`。2026-08-05 的 outlier-aware PTQ 批次均在该环境串行运行，跨配置比较使用同一 checkpoint、cache、代码和 GPU。
 - 已准备任务：**已完成端到端（数据 → cache `ms256` → 多 epoch 训练）** 的为 **`dep`、`semeval`、`ner`**：均有 **`best_model.p`** 与 **`val_metrics.json`**（`dep`×4、`semeval`×6、`ner`×4 个带 checkpoint 的 run，见各 `runs/bert-large-uncased/<task>/`）。**`spr2`**：JSONL 与 **`cache/bert-large-uncased/spr2/`**（train/val/test/val_labels，`ms256`）就绪；Slurm **`17202`–`17205`**（1/3/5/10 epoch）均已 **`COMPLETED`、`ExitCode=0`**（Walltime 见作业表），**`runs/bert-large-uncased/spr2/`** 下已有对应 **`RUN_NAME`** 与 **`best_model.p`**。**OntoNotes 四任务 `pos` / `nonterminal` / `srl` / `coref`**：JSONL 与配置已在仓库；**cache `ms512`** 已由作业 **`17206`** 完成（**`COMPLETED`**，`16:23:46`），**`cache/bert-large-uncased/{pos,nonterminal,srl,coref}/`** 含 **`train`/`val`/`test`/`val_labels`**。**`smoke_e1_ms512_*` 训练试探**（作业 **`17212`–`17215`**）均已 **`COMPLETED`、`ExitCode=0`**（Walltime 见作业表），各 **`runs/bert-large-uncased/<task>/smoke_e1_ms512_*/`** 含 **`best_model.p`** 与 **`val_metrics.json`**（默认 **早停**，进度条未必跑满 runconfig 中的名义 **`max_steps`**，见「验证集指标」一节 OntoNotes 表上方说明）。**Formal `ms512` 多 epoch（无早停）**：**`17222`–`17233`**（**12** 作业，**`NO_IMPROVEMENTS_FOR_N_EVALS=0`**）。截至 2026-06-09 文档更新：**`17222`–`17233`** 已全部 **`COMPLETED`、`ExitCode=0`**；四个 OntoNotes 任务的 formal **3/5/10 ep** run 均有 **`best_model.p`** 与 **`val_metrics.json`**。指标见「验证集指标」OntoNotes formal 表。旧作业 **`17196`**（`ms256`）于 POS 失败，不完整 cache 已删除。
 - Slurm：`dep`、`semeval`、`ner` 多轮训练均已完成（见作业表与验证集指标）。批量 test 作业 `17195` 已结束，但其 **`test_summary.tsv` 与当时各 `test_eval/test_metrics.json` 未对齐真实 test gold，不可作为有效 test**；有效 test 须用 `tools/evaluate_edge_test.py` 或 `test_edge_*.sh` 重跑（默认写入 `test_<task>.tsv`）。**`17207`**（`edge_test_real_gold`）已 **`COMPLETED`**（`00:21:56`），**`test_semeval.tsv` / `test_ner.tsv` / `test_spr2.tsv`** 已为批量行；**`dep`** 的 **`test_dep.tsv`** 已补齐 4 个 run。OntoNotes test 作业 **`17564`–`17567`**（`pos` / `nonterminal` / `srl` / `coref`）已全部 **`COMPLETED`、`ExitCode=0`**，并写入 **`test_pos.tsv` / `test_nonterminal.tsv` / `test_srl.tsv` / `test_coref.tsv`**。当前队列请用 `squeue -u "$USER"` 自查。
-- 备份状态：私有仓库 `https://github.com/ZzX1ng/graduate`；主仓库进度已 **`git push`**；子模块 **`base_exp/jiant`**、**`tools/jiant-v1-legacy`** 仍有本地补丁未单独推送至各自上游，克隆后需依赖 `patches/*.patch` 或本地子模块提交。
+- 备份状态：租用服务器独立快照使用私有仓库 `https://github.com/ZzX1ng/graduate-rental`，与旧仓库 `https://github.com/ZzX1ng/graduate` 分开；代码、README 和精简实验结果已推送。子模块 **`base_exp/jiant`**、**`tools/jiant-v1-legacy`** 仍有本地补丁未单独推送至各自上游，克隆后需应用 `patches/jiant-local-changes.patch`。
 
 ## 待完成主项（工程侧优先）
 
@@ -325,6 +325,7 @@ test   276
 | `20260805_w4a4_single1` | SemEval W4A4 单侧 outlier16 sweep | `COMPLETED`，11/11，0 failed | 租用 RTX 4090 | `16:36:53`-`16:45:12` | 统一 W4A4 对照 1 组、W-outlier16 5 组、A-outlier16 5 组；单侧保护未恢复 W4A4。状态表：`base_exp/exp_edge/local_logs/semeval_w4a4_single_20260805_w4a4_single1/status.tsv`。 |
 | `20260805_isolate4bit1` | SemEval W4A8/W8A4 单侧隔离 sweep | `COMPLETED`，13/13，0 failed | 租用 RTX 4090 | `16:55:57`-`17:05:04` | 验证 W4 权重与 A4 激活分别在另一侧保持 8 bit 时均可由 outlier16 恢复。状态表：`base_exp/exp_edge/local_logs/semeval_w4a8_w8a4_single_20260805_isolate4bit1/status.tsv`。 |
 | `20260805_dual1` | SemEval W4A4 双侧 W/A-outlier16 锚点 | `COMPLETED`，4/4，0 failed | 租用 RTX 4090 | `17:31:30`-`17:36:13` | 四个 W/A 比例组合全部恢复到 W8A8 附近或以上；状态表：`base_exp/exp_edge/local_logs/semeval_w4a4_dual_20260805_dual1/status.tsv`。 |
+| `20260805_full_grid1` | SemEval W4A4 双侧 W/A-outlier16 完整网格 | `COMPLETED`，26 completed + 4 skipped existing，0 failed | 租用 RTX 4090 | `20:29:22`-`21:00:20` | 权重比例 `{0.1,0.25,0.5,1,2,4}%` × 激活比例 `{0.5,1,2,4,6}%`，共 30 组均有结果；状态表：`base_exp/exp_edge/local_logs/semeval_w4a4_dual_grid_20260805_full_grid1/status.tsv`。 |
 
 
 ### 验证集指标（`val_metrics.json`）
@@ -1686,9 +1687,9 @@ Stage-wise fixed-probing ablation
 
 #### 2026-08-05 更新：SemEval W4 隔离实验与 W4A4 双侧 outlier16
 
-本节补记 `20260805_w4a4_single1`、`20260805_isolate4bit1` 与 `20260805_dual1` 三批租用 RTX 4090 实验。全部结果均为 `semeval/formal_e10_ms256/best_model.p` 上重新执行的完整 **validation**；不要与 `formal_e10_ms256/test_eval/test_metrics.json` 中的 test `major=0.878161` 混用。正确对照为：
+本节补记 `20260805_w4a4_single1`、`20260805_isolate4bit1`、`20260805_dual1` 与 `20260805_full_grid1` 四批租用 RTX 4090 实验。全部结果均为 `semeval/formal_e10_ms256/best_model.p` 上重新执行的完整 **validation**；不要与 `formal_e10_ms256/test_eval/test_metrics.json` 中的 test `major=0.878161` 混用。正确对照为：
 
-对应的机器可读汇总保存在 `base_exp/exp_edge/analysis/ptq/semeval_w4_outlier_summary_20260805.tsv`，包含 run name、major、acc、f1、目标/实际离群比例与 BOP overhead。
+单侧和首批锚点汇总保存在 `base_exp/exp_edge/analysis/ptq/semeval_w4_outlier_summary_20260805.tsv`；完整 30 组双侧网格保存在 `base_exp/exp_edge/analysis/ptq/semeval_w4a4_dual_grid_20260805.tsv`。两者均记录 run name、major、acc、f1、目标/实际离群比例与 BOP overhead。
 
 | 对照 | split | major |
 | --- | --- | ---: |
@@ -1734,14 +1735,33 @@ Stage-wise fixed-probing ablation
 
 W4A8 的低成本锚点是 W 0.1%（`major=0.877113`，开销 0.30%），最高 major 出现在 W 2%。W8A4 的接近 W8A8 锚点是 A 2%，最高 major 出现在 A 4%。任务指标并不随离群比例严格单调，因此后续必须按同 BOP 预算比较，而不能直接选择最大比例。
 
-**3. W4A4 双侧保护：可恢复到 W8A8 附近或以上**
+**3. W4A4 双侧保护完整网格：可恢复到 W8A8 附近或以上**
 
-| W target | A target | W actual | A actual | acc | f1_micro | major | BOP overhead |
-| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 0.1% | 2% | 0.100009% | 1.969214% | 0.977372 | 0.774429 | 0.875900 | 0.061851 |
-| 0.1% | 4% | 0.100009% | 3.979414% | 0.977601 | 0.778833 | 0.878217 | 0.122682 |
-| 2% | 2% | 2.000014% | 1.964374% | 0.977921 | 0.779304 | 0.878613 | 0.121785 |
-| 2% | 4% | 2.000014% | 3.970546% | 0.978288 | 0.783562 | **0.880925** | 0.185557 |
+下表为 30 组完整 validation `major` 矩阵，行列均为目标离群比例；实际比例和完整指标见机器可读 TSV。
+
+| W target / A target | 0.5% | 1% | 2% | 4% | 6% |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 0.1% | 0.867585 | **0.876112** | 0.875900 | 0.878217 | 0.876816 |
+| 0.25% | 0.874138 | 0.876418 | 0.875221 | 0.876921 | **0.881308** |
+| 0.5% | 0.869056 | 0.876701 | 0.876714 | 0.878114 | 0.880719 |
+| 1% | 0.870016 | 0.872966 | 0.875183 | 0.876191 | 0.876197 |
+| 2% | 0.872541 | 0.876203 | **0.878613** | **0.880925** | **0.881629** |
+| 4% | 0.869183 | 0.870284 | 0.877916 | 0.875426 | 0.876917 |
+
+严格按“更低 BOP overhead 且不低于当前 major”筛出的 Pareto 点如下。由于 validation 与动态激活阈值存在噪声，相邻点的极小差异不能解释为稳定排序。
+
+| W target | A target | acc | f1_micro | major | BOP overhead |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 0.1% | 0.5% | 0.975585 | 0.759585 | 0.867585 | 1.68% |
+| 0.25% | 0.5% | 0.976822 | 0.771454 | 0.874138 | 2.15% |
+| 0.1% | 1% | 0.977326 | 0.774898 | 0.876112 | 3.16% |
+| 0.25% | 1% | 0.977326 | 0.775510 | 0.876418 | 3.65% |
+| 0.5% | 1% | 0.977555 | 0.775846 | 0.876701 | 4.41% |
+| 0.5% | 2% | 0.977417 | 0.776011 | 0.876714 | 7.49% |
+| 2% | 2% | 0.977921 | 0.779304 | 0.878613 | 12.18% |
+| 2% | 4% | 0.978288 | 0.783562 | 0.880925 | 18.56% |
+| 0.25% | 6% | 0.978196 | 0.784420 | 0.881308 | 18.92% |
+| 2% | 6% | 0.978425 | 0.784833 | 0.881629 | 24.97% |
 
 双侧实现将每个 MAC 分为低比特、仅权重离群、仅激活离群和 W/A 双离群重叠四类，并在 `outlier_runtime_stats.json` 中新增 `weight_outlier_macs`、`activation_outlier_macs`、`dual_outlier_macs`。W4A4 的精确 logical replacement 开销为：
 
@@ -1755,7 +1775,9 @@ BOP_overhead =
 
 若用独立分布近似，归一化形式为 `3*r_w + 3*r_a + 9*r_w*r_a`；正式结果使用运行时实际 mask 和重叠计数，不使用独立性假设替代。
 
-当前三档 Pareto 候选为：低成本 `W0.1%/A2%`（6.19% BOP overhead）、中档 `W2%/A2%`（12.18%）、偏精度 `W2%/A4%`（18.56%）。最高点 `0.880925` 比 W8A8 validation 高 `0.004824`，距 FP32 validation 仅 `0.002676`。这证明 W4A4 双侧 outlier-aware PTQ 在当前 fake-quant 与 logical BOP 模型下具备可行工作点，但尚不能视为最终算法：激活阈值仍是每次 forward 的动态 sampled quantile，下一步必须改为 calibration set 上固定逐模块阈值，并在独立 val/test 上验证。
+完整网格后的推荐锚点更新为：低成本 `W0.1%/A1%`（`major=0.876112`，3.16% overhead），它以最低代价达到 W8A8 validation；中档 `W2%/A2%`（`0.878613`，12.18%）；偏精度可同时保留 `W2%/A4%`（`0.880925`，18.56%）和 `W0.25%/A6%`（`0.881308`，18.92%）。最高点 `W2%/A6%` 为 `0.881629`，距 FP32 validation `0.001971`，但比 `W0.25%/A6%` 仅高 `0.000321`，却多约 6.05 个百分点 BOP overhead，不应直接作为首选。
+
+结果对 W/A 比例均不严格单调，说明“更大离群比例必然更高精度”不成立；这也支持后续把比例选择表述为受预算约束的离散优化，而不是单向增大比例。当前实验仍使用 dynamic sampled activation quantile，且只在同一 validation 上比较，因此只能证明双侧 outlier-aware fake-quant PTQ 存在可行工作点，不能视为最终部署或 test 结论。下一步必须先固定 calibration set 上的逐模块 activation 阈值，再复验上述代表点。
 
 新增/修改实现与运行入口：
 
@@ -1765,12 +1787,14 @@ run_semeval_outlier_ptq_one_local.sh
 run_semeval_w4a4_single_sided_outlier_local.sh
 run_semeval_w4a8_w8a4_single_sided_outlier_local.sh
 run_semeval_w4a4_dual_outlier_local.sh
+run_semeval_w4a4_dual_outlier_grid_local.sh
+summarize_w4a4_dual_grid.py
 ```
 
 阶段结论与下一步：
 
-1. 不再继续扩大统一比例网格；现有锚点已足以证明 W4A4 双侧可恢复。
-2. 先固定 activation calibration 流程，并复验三档 Pareto 候选的稳定性。
+1. 不再继续扩大统一比例网格；30 组完整网格已足以证明 W4A4 双侧可恢复，并给出成本-精度边界。
+2. 先固定 activation calibration 流程，并复验 `W0.1/A1`、`W2/A2`、`W2/A4`、`W0.25/A6` 四个代表点的稳定性。
 3. 生成逐层候选 ratio 的重建误差、任务先验与 BOP 表，再做 uniform、cost-only、random、inverse-probing、fixed-probing-guided 同预算比较。
 4. 方法规则在 SemEval 冻结后，再迁移到 NER 与 DEP；避免用三任务测试结果反向调规则。
 5. QAT 仍只作为 PTQ 后续可选增强，不是当前下一步。
@@ -2193,8 +2217,8 @@ git push git@github.com:ZzX1ng/graduate.git main:main
 6. 下一阶段应先筛选非线性候选方法：优先考虑 LUT-GELU / quantized LUT-GELU / 分段二次，先在 `SPR2`、`SemEval` 做 uniform 档位，再设计同平均表项数的 layer-wise / early / late / random 对照。
 7. 同步筛选线性候选方法：优先考虑 layer-wise mixed precision quantization / outlier-aware quantization / FFN low-rank / 结构化剪枝；不建议把深度可分离卷积替代 BERT dense 层作为当前主线。
 8. 硬件设计应放在方法筛选之后展开：线性部分对应多精度 GEMM/PE 阵列和缓存数据流，非线性部分对应 LUT/PWL/PWQ 或 Softmax/LayerNorm 近似单元；论文需要同时报告任务指标和理论 MAC、存储、DSP/LUT/BRAM 资源变化。
-9. 量化当前状态：SemEval uniform、W6/A6 单侧恢复、W4/A4 隔离和 W4A4 双侧统一比例均已完成。W4A4 双侧四个锚点为 `major=0.875900-0.880925`，下一步不再做更大的统一比例 sweep。
-10. 量化下一步：将动态 activation quantile 改为 calibration set 固定逐模块阈值，复验 `W0.1/A2`、`W2/A2`、`W2/A4` 三档，再建立逐层候选表并开展 probing-guided 同 BOP 预算分配；规则在 SemEval 冻结后验证 NER、DEP。
+9. 量化当前状态：SemEval uniform、W6/A6 单侧恢复、W4/A4 隔离和 W4A4 双侧统一比例均已完成。W4A4 双侧 30 组完整网格的 `major=0.867585-0.881629`；最低成本达到 W8A8 的点为 `W0.1/A1`（3.16% overhead），最高点为 `W2/A6`（24.97% overhead）。下一步不再扩大 uniform ratio sweep。
+10. 量化下一步：将动态 activation quantile 改为 calibration set 固定逐模块阈值，复验 `W0.1/A1`、`W2/A2`、`W2/A4`、`W0.25/A6` 四档，再建立逐层候选表并开展 probing-guided 同 BOP 预算分配；规则在 SemEval 冻结后验证 NER、DEP。
 
 ## 维护要求
 

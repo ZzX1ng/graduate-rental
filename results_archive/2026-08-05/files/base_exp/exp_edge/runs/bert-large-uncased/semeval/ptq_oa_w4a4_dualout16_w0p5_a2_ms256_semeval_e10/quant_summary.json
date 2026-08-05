@@ -1,0 +1,49 @@
+{
+  "mode": "dual_sided_outlier_aware_fake_quant_ptq",
+  "stage": "semeval_stage2_dual_sided_ratio_sweep",
+  "task": "semeval",
+  "base_run": "formal_e10_ms256",
+  "base_checkpoint": "/root/autodl-tmp/master-gra/my_project/base_exp/exp_edge/runs/bert-large-uncased/semeval/formal_e10_ms256/best_model.p",
+  "weight_bits": 4,
+  "activation_bits": 4,
+  "outlier_bits": 16,
+  "weight_target_outlier_ratio": 0.005,
+  "activation_target_outlier_ratio": 0.02,
+  "linear_modules": "bert_encoder_qkv_attn_out_ffn_in_ffn_out",
+  "module_count": 144,
+  "weight_outlier_selection": "static_exact_top_abs_per_linear",
+  "activation_outlier_selection": "dynamic_sampled_quantile_per_forward",
+  "activation_quantile_sample_size": 8192,
+  "cost_model": "logical_replacement_bit_operations",
+  "runtime_stats_path": "/root/autodl-tmp/master-gra/my_project/base_exp/exp_edge/runs/bert-large-uncased/semeval/ptq_oa_w4a4_dualout16_w0p5_a2_ms256_semeval_e10/outlier_runtime_stats.json",
+  "runtime_totals": {
+    "weight_values": 301989888,
+    "weight_outliers": 1509984,
+    "activation_values": 31259271168,
+    "activation_outliers": 617900072,
+    "low_bit_macs": 42679324901376,
+    "outlier_macs": 1047038524042,
+    "weight_outlier_macs": 213401508768,
+    "activation_outlier_macs": 838098421760,
+    "dual_outlier_macs": 4461406486,
+    "low_bit_bops": 682869198422016,
+    "outlier_replacement_bops": 733983637621344,
+    "weight_outlier_ratio": 0.005000114440917969,
+    "activation_outlier_ratio": 0.019766937900732057,
+    "normalized_bop_overhead": 0.07485245976454054
+  },
+  "val_metrics": {
+    "aggregated": 0.8767141690293603,
+    "semeval": {
+      "loss": 0.07891519062018588,
+      "metrics": {
+        "major": 0.8767141690293603,
+        "minor": {
+          "acc": 0.9774174339242362,
+          "f1_micro": 0.7760109041344844,
+          "acc_and_f1_micro": 0.8767141690293603
+        }
+      }
+    }
+  }
+}
