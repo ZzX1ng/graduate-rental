@@ -1,0 +1,60 @@
+# Authorized or manually downloaded datasets.
+# Do not commit LDC, OntoNotes, PTB, PropBank, SPR, or other licensed corpora.
+dataset/
+
+# Generated experiment artifacts.
+base_exp/exp_edge/cache/
+base_exp/exp_edge/models/
+base_exp/exp_edge/runs/
+base_exp/exp_edge/slurm_logs/
+base_exp/exp_edge/local_logs/
+base_exp/exp_edge/legacy_edges/
+base_exp/exp_edge/bin/
+
+# Runtime-generated PTQ run configurations are reproducible from the launch scripts.
+base_exp/exp_edge/runconfigs/bert-large-uncased/semeval/ptq_oa_*.json
+
+# Task data may contain licensed text after conversion.
+base_exp/exp_edge/tasks/data/
+
+# Large or sensitive model/checkpoint artifacts.
+*.pt
+*.pth
+*.bin
+*.ckpt
+*.safetensors
+*.p
+*.pickle
+*.pkl
+
+# Slurm and runtime logs.
+*.out
+*.err
+*.log
+*.zlog
+
+# Python/cache/build artifacts.
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+build/
+dist/
+*.egg-info/
+
+# Local environments and editor state.
+.env
+.venv/
+venv/
+env/
+.vscode/
+.idea/
+
+# OS and temporary files.
+.DS_Store
+*.tmp
+*.swp
+*~

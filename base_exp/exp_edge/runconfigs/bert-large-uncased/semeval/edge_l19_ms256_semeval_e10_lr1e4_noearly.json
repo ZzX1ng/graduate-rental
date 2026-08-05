@@ -1,0 +1,50 @@
+{
+  "task_config_path_dict": {
+    "semeval": "/cluster/home/zhangzx/my_project/base_exp/exp_edge/tasks/configs/semeval_config.json"
+  },
+  "task_cache_config_dict": {
+    "semeval": {
+      "train": "/cluster/home/zhangzx/my_project/base_exp/exp_edge/cache/bert-large-uncased/semeval/train",
+      "val": "/cluster/home/zhangzx/my_project/base_exp/exp_edge/cache/bert-large-uncased/semeval/val",
+      "val_labels": "/cluster/home/zhangzx/my_project/base_exp/exp_edge/cache/bert-large-uncased/semeval/val_labels"
+    }
+  },
+  "sampler_config": {
+    "sampler_type": "UniformMultiTaskSampler"
+  },
+  "global_train_config": {
+    "max_steps": 4290,
+    "warmup_steps": 429
+  },
+  "task_specific_configs_dict": {
+    "semeval": {
+      "train_batch_size": 1,
+      "eval_batch_size": 2,
+      "gradient_accumulation_steps": 16,
+      "eval_subset_num": 500
+    }
+  },
+  "taskmodels_config": {
+    "task_to_taskmodel_map": {
+      "semeval": "semeval"
+    },
+    "taskmodel_config_map": {
+      "semeval": null
+    }
+  },
+  "task_run_config": {
+    "train_task_list": [
+      "semeval"
+    ],
+    "train_val_task_list": [
+      "semeval"
+    ],
+    "val_task_list": [
+      "semeval"
+    ],
+    "test_task_list": []
+  },
+  "metric_aggregator_config": {
+    "metric_aggregator_type": "EqualMetricAggregator"
+  }
+}

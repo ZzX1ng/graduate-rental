@@ -1,0 +1,11 @@
+---
+description: Keep the project README current as experiment state changes
+alwaysApply: true
+---
+
+# README Maintenance
+
+- When changing experiment scripts, Slurm jobs, data preparation, cache state, output paths, or backup rules, update `README.md` in the same turn.
+- Keep job IDs, `RUN_NAME`, epoch counts, cache parameters, dataset readiness, and known blockers current.
+- Do not document licensed dataset contents in detail; record only allowed paths, required inputs, and processing status.
+- If a command submits, cancels, or replaces Slurm jobs, update the submitted-job table or note why no README change is needed.

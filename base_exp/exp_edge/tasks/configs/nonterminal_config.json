@@ -1,0 +1,9 @@
+{
+  "task": "nonterminal",
+  "paths": {
+    "train": "/cluster/home/zhangzx/my_project/base_exp/exp_edge/tasks/data/nonterminal/train.jsonl",
+    "val": "/cluster/home/zhangzx/my_project/base_exp/exp_edge/tasks/data/nonterminal/val.jsonl",
+    "test": "/cluster/home/zhangzx/my_project/base_exp/exp_edge/tasks/data/nonterminal/test.jsonl"
+  },
+  "name": "nonterminal"
+}

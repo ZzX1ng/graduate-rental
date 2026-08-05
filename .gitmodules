@@ -1,0 +1,6 @@
+[submodule "base_exp/jiant"]
+	path = base_exp/jiant
+	url = git@github.com:ZzX1ng/jiant.git
+[submodule "tools/jiant-v1-legacy"]
+	path = tools/jiant-v1-legacy
+	url = git@github.com:ZzX1ng/jiant-v1-legacy.git

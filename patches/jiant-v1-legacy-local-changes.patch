@@ -1,0 +1,31 @@
+diff --git a/probing/data/ud_to_json.py b/probing/data/ud_to_json.py
+index ecdcfacb..4ee6bd15 100755
+--- a/probing/data/ud_to_json.py
++++ b/probing/data/ud_to_json.py
+@@ -13,9 +13,6 @@ import logging as log
+ import os
+ import sys
+
+-import conllu
+-import pandas as pd
+-
+ import utils
+
+ log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)
+@@ -43,6 +40,9 @@ def convert_ud_file(fd):
+
+             for word_line in word_lines:
+                 parts = word_line.split("\t")
++                if "-" in parts[0]:
++                    # Skip CoNLL-U multi-word token range rows such as "29-30".
++                    continue
+                 words.append(parts[1].replace('"', '\\"'))
+                 if "." not in parts[0]:
+                     this_id = int(parts[0])
+@@ -114,7 +114,6 @@ def main(args):
+         target_fname = os.path.join(args.output_dir, target_basename)
+         utils.write_json_data(target_fname, records)
+         log.info("Wrote examples to %s", target_fname)
+-        log.info(stats.format())
+
+     log.info("Done!")

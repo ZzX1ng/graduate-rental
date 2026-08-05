@@ -1,0 +1,9 @@
+{
+  "task": "spr2",
+  "paths": {
+    "train": "/cluster/home/zhangzx/my_project/base_exp/exp_edge/tasks/data/spr2/train.jsonl",
+    "val": "/cluster/home/zhangzx/my_project/base_exp/exp_edge/tasks/data/spr2/val.jsonl",
+    "test": "/cluster/home/zhangzx/my_project/base_exp/exp_edge/tasks/data/spr2/test.jsonl"
+  },
+  "name": "spr2"
+}

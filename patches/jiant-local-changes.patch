@@ -1,0 +1,148 @@
+diff --git a/jiant/proj/main/modeling/primary.py b/jiant/proj/main/modeling/primary.py
+index baec1fa..b51f455 100644
+--- a/jiant/proj/main/modeling/primary.py
++++ b/jiant/proj/main/modeling/primary.py
+@@ -46,6 +46,15 @@ def _write_outlier_ptq_runtime_stats():
+         "activation_outliers": sum(item["activation_outliers"] for item in module_summaries),
+         "low_bit_macs": sum(item["low_bit_macs"] for item in module_summaries),
+         "outlier_macs": sum(item["outlier_macs"] for item in module_summaries),
++        "weight_outlier_macs": sum(
++            item["weight_outlier_macs"] for item in module_summaries
++        ),
++        "activation_outlier_macs": sum(
++            item["activation_outlier_macs"] for item in module_summaries
++        ),
++        "dual_outlier_macs": sum(
++            item["dual_outlier_macs"] for item in module_summaries
++        ),
+         "low_bit_bops": sum(item["low_bit_bops"] for item in module_summaries),
+         "outlier_replacement_bops": sum(
+             item["outlier_replacement_bops"] for item in module_summaries
+@@ -67,8 +76,14 @@ def _write_outlier_ptq_runtime_stats():
+         if totals["low_bit_bops"]
+         else 0.0
+     )
++    has_weight_outliers = any(module.weight_outlier_ratio > 0 for module in _OUTLIER_PTQ_MODULES)
++    has_activation_outliers = any(module.act_outlier_ratio > 0 for module in _OUTLIER_PTQ_MODULES)
+     payload = {
+-        "mode": "single_sided_outlier_aware_fake_quant_ptq",
++        "mode": (
++            "dual_sided_outlier_aware_fake_quant_ptq"
++            if has_weight_outliers and has_activation_outliers
++            else "single_sided_outlier_aware_fake_quant_ptq"
++        ),
+         "cost_model": "logical_replacement_bit_operations",
+         "modules": module_summaries,
+         "totals": totals,
+@@ -366,8 +381,6 @@ class JiantTransformersModel(metaclass=abc.ABCMeta):
+         ):
+             if ratio < 0 or ratio >= 1:
+                 raise ValueError(f"{name} must be in [0, 1), got {ratio}")
+-        if weight_outlier_ratio > 0 and act_outlier_ratio > 0:
+-            raise ValueError("Stage-1 outlier PTQ supports only one-sided protection per run")
+         if outlier_bits <= max(weight_bits, act_bits) or outlier_bits > 32:
+             raise ValueError(
+                 "PTQ_OUTLIER_BITS must be greater than both low-bit widths and at most 32"
+@@ -430,11 +443,12 @@ class JiantTransformersModel(metaclass=abc.ABCMeta):
+                 replaced += 1
+                 replaced_names.append(module_name)
+
+-        mode = (
+-            "single_sided_outlier_aware_fake_quant"
+-            if weight_outlier_ratio > 0 or act_outlier_ratio > 0
+-            else "uniform_fake_quant"
+-        )
++        if weight_outlier_ratio > 0 and act_outlier_ratio > 0:
++            mode = "dual_sided_outlier_aware_fake_quant"
++        elif weight_outlier_ratio > 0 or act_outlier_ratio > 0:
++            mode = "single_sided_outlier_aware_fake_quant"
++        else:
++            mode = "uniform_fake_quant"
+         self.ptq_uniform_summary = {
+             "mode": mode,
+             "weight_bits": weight_bits,
+@@ -796,6 +810,9 @@ class OutlierAwareFakeQuantLinear(nn.Module):
+         self.activation_calls = 0
+         self.low_bit_macs = 0
+         self.outlier_macs = 0
++        self.weight_outlier_macs = 0
++        self.activation_outlier_macs = 0
++        self.dual_outlier_macs = 0
+         self.low_bit_bops = 0
+         self.outlier_replacement_bops = 0
+
+@@ -816,11 +833,18 @@ class OutlierAwareFakeQuantLinear(nn.Module):
+                 )
+                 self.weight_outliers = outlier_count
+                 self.weight_threshold = float(top_values.min().item())
++                weight_outliers_per_input = weight_mask.sum(dim=0, dtype=torch.long)
+             else:
+                 quant_weight = UniformFakeQuantLinear.fake_quant_tensor(
+                     linear.weight.detach(), weight_bits
+                 )
++                weight_outliers_per_input = torch.zeros(
++                    linear.in_features,
++                    dtype=torch.long,
++                    device=linear.weight.device,
++                )
+         self.register_buffer("quant_weight", quant_weight)
++        self.register_buffer("weight_outliers_per_input", weight_outliers_per_input)
+         _register_outlier_ptq_module(self)
+
+     @staticmethod
+@@ -874,19 +898,38 @@ class OutlierAwareFakeQuantLinear(nn.Module):
+
+         rows = x.numel() // self.linear.in_features
+         total_macs = rows * self.linear.weight.numel()
+-        if self.weight_outlier_ratio > 0:
+-            outlier_macs = rows * self.weight_outliers
+-            high_bit_product = self.act_bits * self.outlier_bits
++        weight_outlier_macs = rows * self.weight_outliers
++        activation_outlier_macs = activation_outliers * self.linear.out_features
++        if self.weight_outlier_ratio > 0 and self.act_outlier_ratio > 0:
++            act_outliers_per_input = act_mask.reshape(
++                -1, self.linear.in_features
++            ).sum(dim=0, dtype=torch.long)
++            dual_outlier_macs = int(
++                (act_outliers_per_input * self.weight_outliers_per_input).sum().item()
++            )
+         else:
+-            outlier_macs = activation_outliers * self.linear.out_features
+-            high_bit_product = self.outlier_bits * self.weight_bits
++            dual_outlier_macs = 0
++        outlier_macs = (
++            weight_outlier_macs
++            + activation_outlier_macs
++            - dual_outlier_macs
++        )
+         low_bit_product = self.act_bits * self.weight_bits
+         low_bit_bops = total_macs * low_bit_product
+-        mixed_precision_bops = low_bit_bops + outlier_macs * (
+-            high_bit_product - low_bit_product
++        mixed_precision_bops = (
++            low_bit_bops
++            + (weight_outlier_macs - dual_outlier_macs)
++            * (self.act_bits * self.outlier_bits - low_bit_product)
++            + (activation_outlier_macs - dual_outlier_macs)
++            * (self.outlier_bits * self.weight_bits - low_bit_product)
++            + dual_outlier_macs
++            * (self.outlier_bits * self.outlier_bits - low_bit_product)
+         )
+         self.low_bit_macs += total_macs
+         self.outlier_macs += outlier_macs
++        self.weight_outlier_macs += weight_outlier_macs
++        self.activation_outlier_macs += activation_outlier_macs
++        self.dual_outlier_macs += dual_outlier_macs
+         self.low_bit_bops += low_bit_bops
+         self.outlier_replacement_bops += mixed_precision_bops
+         return F.linear(qx, self.quant_weight, self.linear.bias)
+@@ -922,6 +965,9 @@ class OutlierAwareFakeQuantLinear(nn.Module):
+             "activation_calls": self.activation_calls,
+             "low_bit_macs": self.low_bit_macs,
+             "outlier_macs": self.outlier_macs,
++            "weight_outlier_macs": self.weight_outlier_macs,
++            "activation_outlier_macs": self.activation_outlier_macs,
++            "dual_outlier_macs": self.dual_outlier_macs,
+             "low_bit_bops": self.low_bit_bops,
+             "outlier_replacement_bops": self.outlier_replacement_bops,
+             "normalized_bop_overhead": (
