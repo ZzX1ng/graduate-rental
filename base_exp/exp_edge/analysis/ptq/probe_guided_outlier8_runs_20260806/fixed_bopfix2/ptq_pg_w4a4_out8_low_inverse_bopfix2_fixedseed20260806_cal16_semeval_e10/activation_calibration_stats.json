@@ -1,0 +1,868 @@
+{
+  "modules": [
+    {
+      "module_name": "encoder.layer.0.attention.self.query",
+      "target_outlier_ratio": 0.0115920729717,
+      "sample_count": 65536,
+      "threshold": 1.3057291507720947
+    },
+    {
+      "module_name": "encoder.layer.0.attention.self.key",
+      "target_outlier_ratio": 0.0115920729717,
+      "sample_count": 65536,
+      "threshold": 1.3057291507720947
+    },
+    {
+      "module_name": "encoder.layer.0.attention.self.value",
+      "target_outlier_ratio": 0.0115920729717,
+      "sample_count": 65536,
+      "threshold": 1.3057291507720947
+    },
+    {
+      "module_name": "encoder.layer.0.attention.output.dense",
+      "target_outlier_ratio": 0.0115920729717,
+      "sample_count": 65536,
+      "threshold": 0.4961967468261719
+    },
+    {
+      "module_name": "encoder.layer.0.intermediate.dense",
+      "target_outlier_ratio": 0.0115920729717,
+      "sample_count": 65536,
+      "threshold": 3.075888156890869
+    },
+    {
+      "module_name": "encoder.layer.0.output.dense",
+      "target_outlier_ratio": 0.0115920729717,
+      "sample_count": 65536,
+      "threshold": 0.8374643921852112
+    },
+    {
+      "module_name": "encoder.layer.1.attention.self.query",
+      "target_outlier_ratio": 0.0115267014897,
+      "sample_count": 65536,
+      "threshold": 1.7355659008026123
+    },
+    {
+      "module_name": "encoder.layer.1.attention.self.key",
+      "target_outlier_ratio": 0.0115267014897,
+      "sample_count": 65536,
+      "threshold": 1.7355659008026123
+    },
+    {
+      "module_name": "encoder.layer.1.attention.self.value",
+      "target_outlier_ratio": 0.0115267014897,
+      "sample_count": 65536,
+      "threshold": 1.7355659008026123
+    },
+    {
+      "module_name": "encoder.layer.1.attention.output.dense",
+      "target_outlier_ratio": 0.0115267014897,
+      "sample_count": 65536,
+      "threshold": 0.5866186022758484
+    },
+    {
+      "module_name": "encoder.layer.1.intermediate.dense",
+      "target_outlier_ratio": 0.0115267014897,
+      "sample_count": 65536,
+      "threshold": 2.6685683727264404
+    },
+    {
+      "module_name": "encoder.layer.1.output.dense",
+      "target_outlier_ratio": 0.0115267014897,
+      "sample_count": 65536,
+      "threshold": 0.26385197043418884
+    },
+    {
+      "module_name": "encoder.layer.2.attention.self.query",
+      "target_outlier_ratio": 0.0102396170159,
+      "sample_count": 65536,
+      "threshold": 1.4266290664672852
+    },
+    {
+      "module_name": "encoder.layer.2.attention.self.key",
+      "target_outlier_ratio": 0.0102396170159,
+      "sample_count": 65536,
+      "threshold": 1.4266290664672852
+    },
+    {
+      "module_name": "encoder.layer.2.attention.self.value",
+      "target_outlier_ratio": 0.0102396170159,
+      "sample_count": 65536,
+      "threshold": 1.4266290664672852
+    },
+    {
+      "module_name": "encoder.layer.2.attention.output.dense",
+      "target_outlier_ratio": 0.0102396170159,
+      "sample_count": 65536,
+      "threshold": 0.38666003942489624
+    },
+    {
+      "module_name": "encoder.layer.2.intermediate.dense",
+      "target_outlier_ratio": 0.0102396170159,
+      "sample_count": 65536,
+      "threshold": 2.2814698219299316
+    },
+    {
+      "module_name": "encoder.layer.2.output.dense",
+      "target_outlier_ratio": 0.0102396170159,
+      "sample_count": 65536,
+      "threshold": 0.3726750612258911
+    },
+    {
+      "module_name": "encoder.layer.3.attention.self.query",
+      "target_outlier_ratio": 0.00947579560674,
+      "sample_count": 65536,
+      "threshold": 1.2915844917297363
+    },
+    {
+      "module_name": "encoder.layer.3.attention.self.key",
+      "target_outlier_ratio": 0.00947579560674,
+      "sample_count": 65536,
+      "threshold": 1.2915844917297363
+    },
+    {
+      "module_name": "encoder.layer.3.attention.self.value",
+      "target_outlier_ratio": 0.00947579560674,
+      "sample_count": 65536,
+      "threshold": 1.2915844917297363
+    },
+    {
+      "module_name": "encoder.layer.3.attention.output.dense",
+      "target_outlier_ratio": 0.00947579560674,
+      "sample_count": 65536,
+      "threshold": 0.5814171433448792
+    },
+    {
+      "module_name": "encoder.layer.3.intermediate.dense",
+      "target_outlier_ratio": 0.00947579560674,
+      "sample_count": 65536,
+      "threshold": 2.0430963039398193
+    },
+    {
+      "module_name": "encoder.layer.3.output.dense",
+      "target_outlier_ratio": 0.00947579560674,
+      "sample_count": 65536,
+      "threshold": 0.3852025866508484
+    },
+    {
+      "module_name": "encoder.layer.4.attention.self.query",
+      "target_outlier_ratio": 0.00802680687562,
+      "sample_count": 65536,
+      "threshold": 1.2997199296951294
+    },
+    {
+      "module_name": "encoder.layer.4.attention.self.key",
+      "target_outlier_ratio": 0.00802680687562,
+      "sample_count": 65536,
+      "threshold": 1.2997199296951294
+    },
+    {
+      "module_name": "encoder.layer.4.attention.self.value",
+      "target_outlier_ratio": 0.00802680687562,
+      "sample_count": 65536,
+      "threshold": 1.2997199296951294
+    },
+    {
+      "module_name": "encoder.layer.4.attention.output.dense",
+      "target_outlier_ratio": 0.00802680687562,
+      "sample_count": 65536,
+      "threshold": 0.4324936270713806
+    },
+    {
+      "module_name": "encoder.layer.4.intermediate.dense",
+      "target_outlier_ratio": 0.00802680687562,
+      "sample_count": 65536,
+      "threshold": 2.1611814498901367
+    },
+    {
+      "module_name": "encoder.layer.4.output.dense",
+      "target_outlier_ratio": 0.00802680687562,
+      "sample_count": 65536,
+      "threshold": 0.6907817721366882
+    },
+    {
+      "module_name": "encoder.layer.5.attention.self.query",
+      "target_outlier_ratio": 0.0066127616792,
+      "sample_count": 65536,
+      "threshold": 1.4645490646362305
+    },
+    {
+      "module_name": "encoder.layer.5.attention.self.key",
+      "target_outlier_ratio": 0.0066127616792,
+      "sample_count": 65536,
+      "threshold": 1.4645490646362305
+    },
+    {
+      "module_name": "encoder.layer.5.attention.self.value",
+      "target_outlier_ratio": 0.0066127616792,
+      "sample_count": 65536,
+      "threshold": 1.4645490646362305
+    },
+    {
+      "module_name": "encoder.layer.5.attention.output.dense",
+      "target_outlier_ratio": 0.0066127616792,
+      "sample_count": 65536,
+      "threshold": 0.42253977060317993
+    },
+    {
+      "module_name": "encoder.layer.5.intermediate.dense",
+      "target_outlier_ratio": 0.0066127616792,
+      "sample_count": 65536,
+      "threshold": 2.265223979949951
+    },
+    {
+      "module_name": "encoder.layer.5.output.dense",
+      "target_outlier_ratio": 0.0066127616792,
+      "sample_count": 65536,
+      "threshold": 0.7078458070755005
+    },
+    {
+      "module_name": "encoder.layer.6.attention.self.query",
+      "target_outlier_ratio": 0.00525976408677,
+      "sample_count": 65536,
+      "threshold": 1.7219175100326538
+    },
+    {
+      "module_name": "encoder.layer.6.attention.self.key",
+      "target_outlier_ratio": 0.00525976408677,
+      "sample_count": 65536,
+      "threshold": 1.7219175100326538
+    },
+    {
+      "module_name": "encoder.layer.6.attention.self.value",
+      "target_outlier_ratio": 0.00525976408677,
+      "sample_count": 65536,
+      "threshold": 1.7219175100326538
+    },
+    {
+      "module_name": "encoder.layer.6.attention.output.dense",
+      "target_outlier_ratio": 0.00525976408677,
+      "sample_count": 65536,
+      "threshold": 0.5228758454322815
+    },
+    {
+      "module_name": "encoder.layer.6.intermediate.dense",
+      "target_outlier_ratio": 0.00525976408677,
+      "sample_count": 65536,
+      "threshold": 2.533245325088501
+    },
+    {
+      "module_name": "encoder.layer.6.output.dense",
+      "target_outlier_ratio": 0.00525976408677,
+      "sample_count": 65536,
+      "threshold": 0.6550331711769104
+    },
+    {
+      "module_name": "encoder.layer.7.attention.self.query",
+      "target_outlier_ratio": 0.00427697885279,
+      "sample_count": 65536,
+      "threshold": 1.8154559135437012
+    },
+    {
+      "module_name": "encoder.layer.7.attention.self.key",
+      "target_outlier_ratio": 0.00427697885279,
+      "sample_count": 65536,
+      "threshold": 1.8154559135437012
+    },
+    {
+      "module_name": "encoder.layer.7.attention.self.value",
+      "target_outlier_ratio": 0.00427697885279,
+      "sample_count": 65536,
+      "threshold": 1.8154559135437012
+    },
+    {
+      "module_name": "encoder.layer.7.attention.output.dense",
+      "target_outlier_ratio": 0.00427697885279,
+      "sample_count": 65536,
+      "threshold": 0.5417078733444214
+    },
+    {
+      "module_name": "encoder.layer.7.intermediate.dense",
+      "target_outlier_ratio": 0.00427697885279,
+      "sample_count": 65536,
+      "threshold": 2.497889995574951
+    },
+    {
+      "module_name": "encoder.layer.7.output.dense",
+      "target_outlier_ratio": 0.00427697885279,
+      "sample_count": 65536,
+      "threshold": 0.6227723360061646
+    },
+    {
+      "module_name": "encoder.layer.8.attention.self.query",
+      "target_outlier_ratio": 0.00371586659653,
+      "sample_count": 65536,
+      "threshold": 1.7522019147872925
+    },
+    {
+      "module_name": "encoder.layer.8.attention.self.key",
+      "target_outlier_ratio": 0.00371586659653,
+      "sample_count": 65536,
+      "threshold": 1.7522019147872925
+    },
+    {
+      "module_name": "encoder.layer.8.attention.self.value",
+      "target_outlier_ratio": 0.00371586659653,
+      "sample_count": 65536,
+      "threshold": 1.7522019147872925
+    },
+    {
+      "module_name": "encoder.layer.8.attention.output.dense",
+      "target_outlier_ratio": 0.00371586659653,
+      "sample_count": 65536,
+      "threshold": 0.6217983365058899
+    },
+    {
+      "module_name": "encoder.layer.8.intermediate.dense",
+      "target_outlier_ratio": 0.00371586659653,
+      "sample_count": 65536,
+      "threshold": 2.408168315887451
+    },
+    {
+      "module_name": "encoder.layer.8.output.dense",
+      "target_outlier_ratio": 0.00371586659653,
+      "sample_count": 65536,
+      "threshold": 1.126214623451233
+    },
+    {
+      "module_name": "encoder.layer.9.attention.self.query",
+      "target_outlier_ratio": 0.00321955118083,
+      "sample_count": 65536,
+      "threshold": 1.9233802556991577
+    },
+    {
+      "module_name": "encoder.layer.9.attention.self.key",
+      "target_outlier_ratio": 0.00321955118083,
+      "sample_count": 65536,
+      "threshold": 1.9233802556991577
+    },
+    {
+      "module_name": "encoder.layer.9.attention.self.value",
+      "target_outlier_ratio": 0.00321955118083,
+      "sample_count": 65536,
+      "threshold": 1.9233802556991577
+    },
+    {
+      "module_name": "encoder.layer.9.attention.output.dense",
+      "target_outlier_ratio": 0.00321955118083,
+      "sample_count": 65536,
+      "threshold": 1.128509759902954
+    },
+    {
+      "module_name": "encoder.layer.9.intermediate.dense",
+      "target_outlier_ratio": 0.00321955118083,
+      "sample_count": 65536,
+      "threshold": 2.589341640472412
+    },
+    {
+      "module_name": "encoder.layer.9.output.dense",
+      "target_outlier_ratio": 0.00321955118083,
+      "sample_count": 65536,
+      "threshold": 0.7907055020332336
+    },
+    {
+      "module_name": "encoder.layer.10.attention.self.query",
+      "target_outlier_ratio": 0.00282956830257,
+      "sample_count": 65536,
+      "threshold": 1.8786364793777466
+    },
+    {
+      "module_name": "encoder.layer.10.attention.self.key",
+      "target_outlier_ratio": 0.00282956830257,
+      "sample_count": 65536,
+      "threshold": 1.8786364793777466
+    },
+    {
+      "module_name": "encoder.layer.10.attention.self.value",
+      "target_outlier_ratio": 0.00282956830257,
+      "sample_count": 65536,
+      "threshold": 1.8786364793777466
+    },
+    {
+      "module_name": "encoder.layer.10.attention.output.dense",
+      "target_outlier_ratio": 0.00282956830257,
+      "sample_count": 65536,
+      "threshold": 1.0388214588165283
+    },
+    {
+      "module_name": "encoder.layer.10.intermediate.dense",
+      "target_outlier_ratio": 0.00282956830257,
+      "sample_count": 65536,
+      "threshold": 2.6121842861175537
+    },
+    {
+      "module_name": "encoder.layer.10.output.dense",
+      "target_outlier_ratio": 0.00282956830257,
+      "sample_count": 65536,
+      "threshold": 0.967870831489563
+    },
+    {
+      "module_name": "encoder.layer.11.attention.self.query",
+      "target_outlier_ratio": 0.00249525380428,
+      "sample_count": 65536,
+      "threshold": 1.940724492073059
+    },
+    {
+      "module_name": "encoder.layer.11.attention.self.key",
+      "target_outlier_ratio": 0.00249525380428,
+      "sample_count": 65536,
+      "threshold": 1.940724492073059
+    },
+    {
+      "module_name": "encoder.layer.11.attention.self.value",
+      "target_outlier_ratio": 0.00249525380428,
+      "sample_count": 65536,
+      "threshold": 1.940724492073059
+    },
+    {
+      "module_name": "encoder.layer.11.attention.output.dense",
+      "target_outlier_ratio": 0.00249525380428,
+      "sample_count": 65536,
+      "threshold": 1.042140007019043
+    },
+    {
+      "module_name": "encoder.layer.11.intermediate.dense",
+      "target_outlier_ratio": 0.00249525380428,
+      "sample_count": 65536,
+      "threshold": 2.8005025386810303
+    },
+    {
+      "module_name": "encoder.layer.11.output.dense",
+      "target_outlier_ratio": 0.00249525380428,
+      "sample_count": 65536,
+      "threshold": 1.104535460472107
+    },
+    {
+      "module_name": "encoder.layer.12.attention.self.query",
+      "target_outlier_ratio": 0.00235470637678,
+      "sample_count": 65536,
+      "threshold": 1.967228889465332
+    },
+    {
+      "module_name": "encoder.layer.12.attention.self.key",
+      "target_outlier_ratio": 0.00235470637678,
+      "sample_count": 65536,
+      "threshold": 1.967228889465332
+    },
+    {
+      "module_name": "encoder.layer.12.attention.self.value",
+      "target_outlier_ratio": 0.00235470637678,
+      "sample_count": 65536,
+      "threshold": 1.967228889465332
+    },
+    {
+      "module_name": "encoder.layer.12.attention.output.dense",
+      "target_outlier_ratio": 0.00235470637678,
+      "sample_count": 65536,
+      "threshold": 1.0156166553497314
+    },
+    {
+      "module_name": "encoder.layer.12.intermediate.dense",
+      "target_outlier_ratio": 0.00235470637678,
+      "sample_count": 65536,
+      "threshold": 2.800436019897461
+    },
+    {
+      "module_name": "encoder.layer.12.output.dense",
+      "target_outlier_ratio": 0.00235470637678,
+      "sample_count": 65536,
+      "threshold": 1.2790038585662842
+    },
+    {
+      "module_name": "encoder.layer.13.attention.self.query",
+      "target_outlier_ratio": 0.00220842894046,
+      "sample_count": 65536,
+      "threshold": 1.9965269565582275
+    },
+    {
+      "module_name": "encoder.layer.13.attention.self.key",
+      "target_outlier_ratio": 0.00220842894046,
+      "sample_count": 65536,
+      "threshold": 1.9965269565582275
+    },
+    {
+      "module_name": "encoder.layer.13.attention.self.value",
+      "target_outlier_ratio": 0.00220842894046,
+      "sample_count": 65536,
+      "threshold": 1.9965269565582275
+    },
+    {
+      "module_name": "encoder.layer.13.attention.output.dense",
+      "target_outlier_ratio": 0.00220842894046,
+      "sample_count": 65536,
+      "threshold": 1.1883494853973389
+    },
+    {
+      "module_name": "encoder.layer.13.intermediate.dense",
+      "target_outlier_ratio": 0.00220842894046,
+      "sample_count": 65536,
+      "threshold": 2.9964911937713623
+    },
+    {
+      "module_name": "encoder.layer.13.output.dense",
+      "target_outlier_ratio": 0.00220842894046,
+      "sample_count": 65536,
+      "threshold": 1.1717567443847656
+    },
+    {
+      "module_name": "encoder.layer.14.attention.self.query",
+      "target_outlier_ratio": 0.00190579417454,
+      "sample_count": 65536,
+      "threshold": 2.3375978469848633
+    },
+    {
+      "module_name": "encoder.layer.14.attention.self.key",
+      "target_outlier_ratio": 0.00190579417454,
+      "sample_count": 65536,
+      "threshold": 2.3375978469848633
+    },
+    {
+      "module_name": "encoder.layer.14.attention.self.value",
+      "target_outlier_ratio": 0.00190579417454,
+      "sample_count": 65536,
+      "threshold": 2.3375978469848633
+    },
+    {
+      "module_name": "encoder.layer.14.attention.output.dense",
+      "target_outlier_ratio": 0.00190579417454,
+      "sample_count": 65536,
+      "threshold": 1.1893757581710815
+    },
+    {
+      "module_name": "encoder.layer.14.intermediate.dense",
+      "target_outlier_ratio": 0.00190579417454,
+      "sample_count": 65536,
+      "threshold": 5.601933002471924
+    },
+    {
+      "module_name": "encoder.layer.14.output.dense",
+      "target_outlier_ratio": 0.00190579417454,
+      "sample_count": 65536,
+      "threshold": 1.4216740131378174
+    },
+    {
+      "module_name": "encoder.layer.15.attention.self.query",
+      "target_outlier_ratio": 0.00169214194306,
+      "sample_count": 65536,
+      "threshold": 2.3645572662353516
+    },
+    {
+      "module_name": "encoder.layer.15.attention.self.key",
+      "target_outlier_ratio": 0.00169214194306,
+      "sample_count": 65536,
+      "threshold": 2.3645572662353516
+    },
+    {
+      "module_name": "encoder.layer.15.attention.self.value",
+      "target_outlier_ratio": 0.00169214194306,
+      "sample_count": 65536,
+      "threshold": 2.3645572662353516
+    },
+    {
+      "module_name": "encoder.layer.15.attention.output.dense",
+      "target_outlier_ratio": 0.00169214194306,
+      "sample_count": 65536,
+      "threshold": 1.9369251728057861
+    },
+    {
+      "module_name": "encoder.layer.15.intermediate.dense",
+      "target_outlier_ratio": 0.00169214194306,
+      "sample_count": 65536,
+      "threshold": 3.1820878982543945
+    },
+    {
+      "module_name": "encoder.layer.15.output.dense",
+      "target_outlier_ratio": 0.00169214194306,
+      "sample_count": 65536,
+      "threshold": 2.0098531246185303
+    },
+    {
+      "module_name": "encoder.layer.16.attention.self.query",
+      "target_outlier_ratio": 0.00156881647892,
+      "sample_count": 65536,
+      "threshold": 2.5150206089019775
+    },
+    {
+      "module_name": "encoder.layer.16.attention.self.key",
+      "target_outlier_ratio": 0.00156881647892,
+      "sample_count": 65536,
+      "threshold": 2.5150206089019775
+    },
+    {
+      "module_name": "encoder.layer.16.attention.self.value",
+      "target_outlier_ratio": 0.00156881647892,
+      "sample_count": 65536,
+      "threshold": 2.5150206089019775
+    },
+    {
+      "module_name": "encoder.layer.16.attention.output.dense",
+      "target_outlier_ratio": 0.00156881647892,
+      "sample_count": 65536,
+      "threshold": 1.913360834121704
+    },
+    {
+      "module_name": "encoder.layer.16.intermediate.dense",
+      "target_outlier_ratio": 0.00156881647892,
+      "sample_count": 65536,
+      "threshold": 3.0144736766815186
+    },
+    {
+      "module_name": "encoder.layer.16.output.dense",
+      "target_outlier_ratio": 0.00156881647892,
+      "sample_count": 65536,
+      "threshold": 2.2971608638763428
+    },
+    {
+      "module_name": "encoder.layer.17.attention.self.query",
+      "target_outlier_ratio": 0.00164658261945,
+      "sample_count": 65536,
+      "threshold": 2.684497356414795
+    },
+    {
+      "module_name": "encoder.layer.17.attention.self.key",
+      "target_outlier_ratio": 0.00164658261945,
+      "sample_count": 65536,
+      "threshold": 2.684497356414795
+    },
+    {
+      "module_name": "encoder.layer.17.attention.self.value",
+      "target_outlier_ratio": 0.00164658261945,
+      "sample_count": 65536,
+      "threshold": 2.684497356414795
+    },
+    {
+      "module_name": "encoder.layer.17.attention.output.dense",
+      "target_outlier_ratio": 0.00164658261945,
+      "sample_count": 65536,
+      "threshold": 1.806945562362671
+    },
+    {
+      "module_name": "encoder.layer.17.intermediate.dense",
+      "target_outlier_ratio": 0.00164658261945,
+      "sample_count": 65536,
+      "threshold": 2.998124599456787
+    },
+    {
+      "module_name": "encoder.layer.17.output.dense",
+      "target_outlier_ratio": 0.00164658261945,
+      "sample_count": 65536,
+      "threshold": 1.9263452291488647
+    },
+    {
+      "module_name": "encoder.layer.18.attention.self.query",
+      "target_outlier_ratio": 0.00167774104917,
+      "sample_count": 65536,
+      "threshold": 2.690107822418213
+    },
+    {
+      "module_name": "encoder.layer.18.attention.self.key",
+      "target_outlier_ratio": 0.00167774104917,
+      "sample_count": 65536,
+      "threshold": 2.690107822418213
+    },
+    {
+      "module_name": "encoder.layer.18.attention.self.value",
+      "target_outlier_ratio": 0.00167774104917,
+      "sample_count": 65536,
+      "threshold": 2.690107822418213
+    },
+    {
+      "module_name": "encoder.layer.18.attention.output.dense",
+      "target_outlier_ratio": 0.00167774104917,
+      "sample_count": 65536,
+      "threshold": 2.3687198162078857
+    },
+    {
+      "module_name": "encoder.layer.18.intermediate.dense",
+      "target_outlier_ratio": 0.00167774104917,
+      "sample_count": 65536,
+      "threshold": 2.929090738296509
+    },
+    {
+      "module_name": "encoder.layer.18.output.dense",
+      "target_outlier_ratio": 0.00167774104917,
+      "sample_count": 65536,
+      "threshold": 1.8939380645751953
+    },
+    {
+      "module_name": "encoder.layer.19.attention.self.query",
+      "target_outlier_ratio": 0.00178478881853,
+      "sample_count": 65536,
+      "threshold": 2.662081718444824
+    },
+    {
+      "module_name": "encoder.layer.19.attention.self.key",
+      "target_outlier_ratio": 0.00178478881853,
+      "sample_count": 65536,
+      "threshold": 2.662081718444824
+    },
+    {
+      "module_name": "encoder.layer.19.attention.self.value",
+      "target_outlier_ratio": 0.00178478881853,
+      "sample_count": 65536,
+      "threshold": 2.662081718444824
+    },
+    {
+      "module_name": "encoder.layer.19.attention.output.dense",
+      "target_outlier_ratio": 0.00178478881853,
+      "sample_count": 65536,
+      "threshold": 2.6735596656799316
+    },
+    {
+      "module_name": "encoder.layer.19.intermediate.dense",
+      "target_outlier_ratio": 0.00178478881853,
+      "sample_count": 65536,
+      "threshold": 2.836996555328369
+    },
+    {
+      "module_name": "encoder.layer.19.output.dense",
+      "target_outlier_ratio": 0.00178478881853,
+      "sample_count": 65536,
+      "threshold": 1.8594915866851807
+    },
+    {
+      "module_name": "encoder.layer.20.attention.self.query",
+      "target_outlier_ratio": 0.00203325705018,
+      "sample_count": 65536,
+      "threshold": 2.5779001712799072
+    },
+    {
+      "module_name": "encoder.layer.20.attention.self.key",
+      "target_outlier_ratio": 0.00203325705018,
+      "sample_count": 65536,
+      "threshold": 2.5779001712799072
+    },
+    {
+      "module_name": "encoder.layer.20.attention.self.value",
+      "target_outlier_ratio": 0.00203325705018,
+      "sample_count": 65536,
+      "threshold": 2.5779001712799072
+    },
+    {
+      "module_name": "encoder.layer.20.attention.output.dense",
+      "target_outlier_ratio": 0.00203325705018,
+      "sample_count": 65536,
+      "threshold": 2.685182809829712
+    },
+    {
+      "module_name": "encoder.layer.20.intermediate.dense",
+      "target_outlier_ratio": 0.00203325705018,
+      "sample_count": 65536,
+      "threshold": 2.8100287914276123
+    },
+    {
+      "module_name": "encoder.layer.20.output.dense",
+      "target_outlier_ratio": 0.00203325705018,
+      "sample_count": 65536,
+      "threshold": 1.8285800218582153
+    },
+    {
+      "module_name": "encoder.layer.21.attention.self.query",
+      "target_outlier_ratio": 0.00250621094725,
+      "sample_count": 65536,
+      "threshold": 2.498154878616333
+    },
+    {
+      "module_name": "encoder.layer.21.attention.self.key",
+      "target_outlier_ratio": 0.00250621094725,
+      "sample_count": 65536,
+      "threshold": 2.498154878616333
+    },
+    {
+      "module_name": "encoder.layer.21.attention.self.value",
+      "target_outlier_ratio": 0.00250621094725,
+      "sample_count": 65536,
+      "threshold": 2.498154878616333
+    },
+    {
+      "module_name": "encoder.layer.21.attention.output.dense",
+      "target_outlier_ratio": 0.00250621094725,
+      "sample_count": 65536,
+      "threshold": 2.630084276199341
+    },
+    {
+      "module_name": "encoder.layer.21.intermediate.dense",
+      "target_outlier_ratio": 0.00250621094725,
+      "sample_count": 65536,
+      "threshold": 2.6949875354766846
+    },
+    {
+      "module_name": "encoder.layer.21.output.dense",
+      "target_outlier_ratio": 0.00250621094725,
+      "sample_count": 65536,
+      "threshold": 1.760416030883789
+    },
+    {
+      "module_name": "encoder.layer.22.attention.self.query",
+      "target_outlier_ratio": 0.00511686196459,
+      "sample_count": 65536,
+      "threshold": 2.4065303802490234
+    },
+    {
+      "module_name": "encoder.layer.22.attention.self.key",
+      "target_outlier_ratio": 0.00511686196459,
+      "sample_count": 65536,
+      "threshold": 2.4065303802490234
+    },
+    {
+      "module_name": "encoder.layer.22.attention.self.value",
+      "target_outlier_ratio": 0.00511686196459,
+      "sample_count": 65536,
+      "threshold": 2.4065303802490234
+    },
+    {
+      "module_name": "encoder.layer.22.attention.output.dense",
+      "target_outlier_ratio": 0.00511686196459,
+      "sample_count": 65536,
+      "threshold": 2.388624429702759
+    },
+    {
+      "module_name": "encoder.layer.22.intermediate.dense",
+      "target_outlier_ratio": 0.00511686196459,
+      "sample_count": 65536,
+      "threshold": 2.3196041584014893
+    },
+    {
+      "module_name": "encoder.layer.22.output.dense",
+      "target_outlier_ratio": 0.00511686196459,
+      "sample_count": 65536,
+      "threshold": 1.331181287765503
+    },
+    {
+      "module_name": "encoder.layer.23.attention.self.query",
+      "target_outlier_ratio": 0.00730795574582,
+      "sample_count": 65536,
+      "threshold": 2.3405203819274902
+    },
+    {
+      "module_name": "encoder.layer.23.attention.self.key",
+      "target_outlier_ratio": 0.00730795574582,
+      "sample_count": 65536,
+      "threshold": 2.3405203819274902
+    },
+    {
+      "module_name": "encoder.layer.23.attention.self.value",
+      "target_outlier_ratio": 0.00730795574582,
+      "sample_count": 65536,
+      "threshold": 2.3405203819274902
+    },
+    {
+      "module_name": "encoder.layer.23.attention.output.dense",
+      "target_outlier_ratio": 0.00730795574582,
+      "sample_count": 65536,
+      "threshold": 2.5270402431488037
+    },
+    {
+      "module_name": "encoder.layer.23.intermediate.dense",
+      "target_outlier_ratio": 0.00730795574582,
+      "sample_count": 65536,
+      "threshold": 2.171708583831787
+    },
+    {
+      "module_name": "encoder.layer.23.output.dense",
+      "target_outlier_ratio": 0.00730795574582,
+      "sample_count": 65536,
+      "threshold": 1.2956154346466064
+    }
+  ]
+}

@@ -23,6 +23,8 @@ set -euo pipefail
 : "${PTQ_ACT_OUTLIER_LAYER_RATIOS:=}"
 : "${PTQ_ALLOCATION_STRATEGY:=uniform}"
 : "${PTQ_NOMINAL_BOP_OVERHEAD:=}"
+: "${PTQ_EVAL_SUBSET_NUM:=500}"
+: "${PTQ_RUN_SEED:=20260806}"
 : "${RUN_NAME:?Set RUN_NAME}"
 
 PROJECT_ROOT="${PROJECT_ROOT:-/root/autodl-tmp/master-gra/my_project}"
@@ -57,6 +59,8 @@ echo "PTQ_WEIGHT_OUTLIER_LAYER_RATIOS=$PTQ_WEIGHT_OUTLIER_LAYER_RATIOS"
 echo "PTQ_ACT_OUTLIER_LAYER_RATIOS=$PTQ_ACT_OUTLIER_LAYER_RATIOS"
 echo "PTQ_ALLOCATION_STRATEGY=$PTQ_ALLOCATION_STRATEGY"
 echo "PTQ_NOMINAL_BOP_OVERHEAD=$PTQ_NOMINAL_BOP_OVERHEAD"
+echo "PTQ_EVAL_SUBSET_NUM=$PTQ_EVAL_SUBSET_NUM"
+echo "PTQ_RUN_SEED=$PTQ_RUN_SEED"
 
 if [[ ! -f "$BASE_CKPT" ]]; then
   echo "ERROR: missing baseline checkpoint: $BASE_CKPT" >&2
@@ -93,6 +97,7 @@ cd "$PROJECT_ROOT"
   --task_cache_base_path "$EXP_DIR/cache/$MODEL" \
   --train_batch_size 1 \
   --eval_batch_multiplier 2 \
+  --eval_subset_num "$PTQ_EVAL_SUBSET_NUM" \
   --do_train \
   --max_steps 0 \
   --do_val
@@ -104,6 +109,7 @@ cd "$PROJECT_ROOT"
   --model_path "$BASE_CKPT" \
   --jiant_task_container_config_path "$RUNCONFIG_PATH" \
   --model_load_mode all \
+  --seed "$PTQ_RUN_SEED" \
   --do_val \
   --force_overwrite \
   --output_dir "$OUTPUT_DIR"
