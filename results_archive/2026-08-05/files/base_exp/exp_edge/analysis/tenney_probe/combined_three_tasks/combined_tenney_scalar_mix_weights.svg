@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="620" viewBox="0 0 1080 620">
+<rect width="100%" height="100%" fill="white"/>
+<text x="540.0" y="34" text-anchor="middle" font-family="Arial" font-size="22" font-weight="700" fill="#111827">Tenney-style Scalar-mix Weights Across Tasks</text>
+<text x="540.0" y="58" text-anchor="middle" font-family="Arial" font-size="13" fill="#6b7280">Three task series: SemEval, NER, DEP. Layer 0 is embedding output; layers 1-24 are Transformer layers.</text>
+<line x1="86" y1="500.00" x2="1046" y2="500.00" stroke="#e5e7eb"/>
+<text x="76" y="504.00" text-anchor="end" font-family="Arial" font-size="12" fill="#6b7280">0.000</text>
+<line x1="86" y1="414.80" x2="1046" y2="414.80" stroke="#e5e7eb"/>
+<text x="76" y="418.80" text-anchor="end" font-family="Arial" font-size="12" fill="#6b7280">0.021</text>
+<line x1="86" y1="329.60" x2="1046" y2="329.60" stroke="#e5e7eb"/>
+<text x="76" y="333.60" text-anchor="end" font-family="Arial" font-size="12" fill="#6b7280">0.042</text>
+<line x1="86" y1="244.40" x2="1046" y2="244.40" stroke="#e5e7eb"/>
+<text x="76" y="248.40" text-anchor="end" font-family="Arial" font-size="12" fill="#6b7280">0.063</text>
+<line x1="86" y1="159.20" x2="1046" y2="159.20" stroke="#e5e7eb"/>
+<text x="76" y="163.20" text-anchor="end" font-family="Arial" font-size="12" fill="#6b7280">0.084</text>
+<line x1="86" y1="74.00" x2="1046" y2="74.00" stroke="#e5e7eb"/>
+<text x="76" y="78.00" text-anchor="end" font-family="Arial" font-size="12" fill="#6b7280">0.105</text>
+<line x1="86" y1="74" x2="86" y2="500" stroke="#111827"/>
+<line x1="86" y1="500" x2="1046" y2="500" stroke="#111827"/>
+<line x1="86" y1="337.81" x2="1046" y2="337.81" stroke="#9ca3af" stroke-dasharray="6,5"/>
+<text x="1040" y="330.81" text-anchor="end" font-family="Arial" font-size="12" fill="#6b7280">uniform 1/25 = 0.040</text>
+<polyline points="86.00,362.98 126.00,364.84 166.00,366.18 206.00,366.04 246.00,364.95 286.00,364.22 326.00,362.81 366.00,355.42 406.00,340.56 446.00,317.35 486.00,318.49 526.00,317.16 566.00,317.01 606.00,316.09 646.00,315.81 686.00,314.22 726.00,311.82 766.00,311.87 806.00,312.92 846.00,313.13 886.00,311.38 926.00,333.55 966.00,358.71 1006.00,362.83 1046.00,364.85" fill="none" stroke="#4c78a8" stroke-width="2.8"/>
+<circle cx="86.00" cy="362.98" r="3.0" fill="#4c78a8"/>
+<circle cx="126.00" cy="364.84" r="3.0" fill="#4c78a8"/>
+<circle cx="166.00" cy="366.18" r="3.0" fill="#4c78a8"/>
+<circle cx="206.00" cy="366.04" r="3.0" fill="#4c78a8"/>
+<circle cx="246.00" cy="364.95" r="3.0" fill="#4c78a8"/>
+<circle cx="286.00" cy="364.22" r="3.0" fill="#4c78a8"/>
+<circle cx="326.00" cy="362.81" r="3.0" fill="#4c78a8"/>
+<circle cx="366.00" cy="355.42" r="3.0" fill="#4c78a8"/>
+<circle cx="406.00" cy="340.56" r="3.0" fill="#4c78a8"/>
+<circle cx="446.00" cy="317.35" r="3.0" fill="#4c78a8"/>
+<circle cx="486.00" cy="318.49" r="3.0" fill="#4c78a8"/>
+<circle cx="526.00" cy="317.16" r="3.0" fill="#4c78a8"/>
+<circle cx="566.00" cy="317.01" r="3.0" fill="#4c78a8"/>
+<circle cx="606.00" cy="316.09" r="3.0" fill="#4c78a8"/>
+<circle cx="646.00" cy="315.81" r="3.0" fill="#4c78a8"/>
+<circle cx="686.00" cy="314.22" r="3.0" fill="#4c78a8"/>
+<circle cx="726.00" cy="311.82" r="3.0" fill="#4c78a8"/>
+<circle cx="766.00" cy="311.87" r="3.0" fill="#4c78a8"/>
+<circle cx="806.00" cy="312.92" r="3.0" fill="#4c78a8"/>
+<circle cx="846.00" cy="313.13" r="3.0" fill="#4c78a8"/>
+<circle cx="886.00" cy="311.38" r="3.0" fill="#4c78a8"/>
+<circle cx="926.00" cy="333.55" r="3.0" fill="#4c78a8"/>
+<circle cx="966.00" cy="358.71" r="3.0" fill="#4c78a8"/>
+<circle cx="1006.00" cy="362.83" r="3.0" fill="#4c78a8"/>
+<circle cx="1046.00" cy="364.85" r="3.0" fill="#4c78a8"/>
+<line x1="96" y1="90" x2="124" y2="90" stroke="#4c78a8" stroke-width="3"/>
+<text x="134" y="94" font-family="Arial" font-size="13" fill="#111827">SemEval</text>
+<polyline points="86.00,399.02 126.00,398.46 166.00,399.09 206.00,399.57 246.00,400.56 286.00,397.99 326.00,391.69 366.00,329.41 406.00,324.18 446.00,297.48 486.00,307.08 526.00,290.03 566.00,288.15 606.00,287.81 646.00,279.57 686.00,270.41 726.00,272.24 766.00,284.97 806.00,286.43 846.00,293.19 886.00,295.57 926.00,366.39 966.00,388.15 1006.00,396.09 1046.00,401.66" fill="none" stroke="#d95f02" stroke-width="2.8"/>
+<circle cx="86.00" cy="399.02" r="3.0" fill="#d95f02"/>
+<circle cx="126.00" cy="398.46" r="3.0" fill="#d95f02"/>
+<circle cx="166.00" cy="399.09" r="3.0" fill="#d95f02"/>
+<circle cx="206.00" cy="399.57" r="3.0" fill="#d95f02"/>
+<circle cx="246.00" cy="400.56" r="3.0" fill="#d95f02"/>
+<circle cx="286.00" cy="397.99" r="3.0" fill="#d95f02"/>
+<circle cx="326.00" cy="391.69" r="3.0" fill="#d95f02"/>
+<circle cx="366.00" cy="329.41" r="3.0" fill="#d95f02"/>
+<circle cx="406.00" cy="324.18" r="3.0" fill="#d95f02"/>
+<circle cx="446.00" cy="297.48" r="3.0" fill="#d95f02"/>
+<circle cx="486.00" cy="307.08" r="3.0" fill="#d95f02"/>
+<circle cx="526.00" cy="290.03" r="3.0" fill="#d95f02"/>
+<circle cx="566.00" cy="288.15" r="3.0" fill="#d95f02"/>
+<circle cx="606.00" cy="287.81" r="3.0" fill="#d95f02"/>
+<circle cx="646.00" cy="279.57" r="3.0" fill="#d95f02"/>
+<circle cx="686.00" cy="270.41" r="3.0" fill="#d95f02"/>
+<circle cx="726.00" cy="272.24" r="3.0" fill="#d95f02"/>
+<circle cx="766.00" cy="284.97" r="3.0" fill="#d95f02"/>
+<circle cx="806.00" cy="286.43" r="3.0" fill="#d95f02"/>
+<circle cx="846.00" cy="293.19" r="3.0" fill="#d95f02"/>
+<circle cx="886.00" cy="295.57" r="3.0" fill="#d95f02"/>
+<circle cx="926.00" cy="366.39" r="3.0" fill="#d95f02"/>
+<circle cx="966.00" cy="388.15" r="3.0" fill="#d95f02"/>
+<circle cx="1006.00" cy="396.09" r="3.0" fill="#d95f02"/>
+<circle cx="1046.00" cy="401.66" r="3.0" fill="#d95f02"/>
+<line x1="96" y1="114" x2="124" y2="114" stroke="#d95f02" stroke-width="3"/>
+<text x="134" y="118" font-family="Arial" font-size="13" fill="#111827">NER</text>
+<polyline points="86.00,433.92 126.00,435.02 166.00,437.84 206.00,437.03 246.00,430.61 286.00,422.34 326.00,418.77 366.00,365.74 406.00,402.34 446.00,362.40 486.00,330.42 526.00,226.98 566.00,171.20 606.00,110.95 646.00,105.56 686.00,113.80 726.00,145.42 766.00,268.64 806.00,340.40 846.00,370.59 886.00,373.78 926.00,423.14 966.00,435.26 1006.00,435.31 1046.00,447.73" fill="none" stroke="#1b9e77" stroke-width="2.8"/>
+<circle cx="86.00" cy="433.92" r="3.0" fill="#1b9e77"/>
+<circle cx="126.00" cy="435.02" r="3.0" fill="#1b9e77"/>
+<circle cx="166.00" cy="437.84" r="3.0" fill="#1b9e77"/>
+<circle cx="206.00" cy="437.03" r="3.0" fill="#1b9e77"/>
+<circle cx="246.00" cy="430.61" r="3.0" fill="#1b9e77"/>
+<circle cx="286.00" cy="422.34" r="3.0" fill="#1b9e77"/>
+<circle cx="326.00" cy="418.77" r="3.0" fill="#1b9e77"/>
+<circle cx="366.00" cy="365.74" r="3.0" fill="#1b9e77"/>
+<circle cx="406.00" cy="402.34" r="3.0" fill="#1b9e77"/>
+<circle cx="446.00" cy="362.40" r="3.0" fill="#1b9e77"/>
+<circle cx="486.00" cy="330.42" r="3.0" fill="#1b9e77"/>
+<circle cx="526.00" cy="226.98" r="3.0" fill="#1b9e77"/>
+<circle cx="566.00" cy="171.20" r="3.0" fill="#1b9e77"/>
+<circle cx="606.00" cy="110.95" r="3.0" fill="#1b9e77"/>
+<circle cx="646.00" cy="105.56" r="3.0" fill="#1b9e77"/>
+<circle cx="686.00" cy="113.80" r="3.0" fill="#1b9e77"/>
+<circle cx="726.00" cy="145.42" r="3.0" fill="#1b9e77"/>
+<circle cx="766.00" cy="268.64" r="3.0" fill="#1b9e77"/>
+<circle cx="806.00" cy="340.40" r="3.0" fill="#1b9e77"/>
+<circle cx="846.00" cy="370.59" r="3.0" fill="#1b9e77"/>
+<circle cx="886.00" cy="373.78" r="3.0" fill="#1b9e77"/>
+<circle cx="926.00" cy="423.14" r="3.0" fill="#1b9e77"/>
+<circle cx="966.00" cy="435.26" r="3.0" fill="#1b9e77"/>
+<circle cx="1006.00" cy="435.31" r="3.0" fill="#1b9e77"/>
+<circle cx="1046.00" cy="447.73" r="3.0" fill="#1b9e77"/>
+<line x1="96" y1="138" x2="124" y2="138" stroke="#1b9e77" stroke-width="3"/>
+<text x="134" y="142" font-family="Arial" font-size="13" fill="#111827">DEP</text>
+<line x1="86.00" y1="500" x2="86.00" y2="505" stroke="#111827"/>
+<text x="86.00" y="522" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">0</text>
+<line x1="166.00" y1="500" x2="166.00" y2="505" stroke="#111827"/>
+<text x="166.00" y="522" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">2</text>
+<line x1="246.00" y1="500" x2="246.00" y2="505" stroke="#111827"/>
+<text x="246.00" y="522" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">4</text>
+<line x1="326.00" y1="500" x2="326.00" y2="505" stroke="#111827"/>
+<text x="326.00" y="522" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">6</text>
+<line x1="406.00" y1="500" x2="406.00" y2="505" stroke="#111827"/>
+<text x="406.00" y="522" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">8</text>
+<line x1="486.00" y1="500" x2="486.00" y2="505" stroke="#111827"/>
+<text x="486.00" y="522" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">10</text>
+<line x1="566.00" y1="500" x2="566.00" y2="505" stroke="#111827"/>
+<text x="566.00" y="522" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">12</text>
+<line x1="646.00" y1="500" x2="646.00" y2="505" stroke="#111827"/>
+<text x="646.00" y="522" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">14</text>
+<line x1="726.00" y1="500" x2="726.00" y2="505" stroke="#111827"/>
+<text x="726.00" y="522" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">16</text>
+<line x1="806.00" y1="500" x2="806.00" y2="505" stroke="#111827"/>
+<text x="806.00" y="522" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">18</text>
+<line x1="886.00" y1="500" x2="886.00" y2="505" stroke="#111827"/>
+<text x="886.00" y="522" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">20</text>
+<line x1="966.00" y1="500" x2="966.00" y2="505" stroke="#111827"/>
+<text x="966.00" y="522" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">22</text>
+<line x1="1046.00" y1="500" x2="1046.00" y2="505" stroke="#111827"/>
+<text x="1046.00" y="522" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">24</text>
+<text x="540.0" y="550" text-anchor="middle" font-family="Arial" font-size="14" fill="#111827">BERT-large layer</text>
+<text transform="translate(24,287.0) rotate(-90)" text-anchor="middle" font-family="Arial" font-size="14" fill="#111827">Scalar-mix weight</text>
+<text x="86" y="586" font-family="Arial" font-size="12" fill="#6b7280">Scalar-mix weights are directly comparable as learned layer-selection distributions.</text>
+</svg>

@@ -1,0 +1,27 @@
+{
+  "mode": "uniform_fake_quant_ptq",
+  "task": "semeval",
+  "base_run": "formal_e10_ms256",
+  "base_checkpoint": "/cluster/home/zhangzx/my_project/base_exp/exp_edge/runs/bert-large-uncased/semeval/formal_e10_ms256/best_model.p",
+  "weight_bits": 4,
+  "activation_bits": 8,
+  "linear_modules": "bert_encoder_qkv_attn_out_ffn_in_ffn_out",
+  "module_count": 144,
+  "weight_granularity": "per_tensor_symmetric",
+  "activation_granularity": "dynamic_per_tensor_symmetric",
+  "outlier_aware": false,
+  "val_metrics": {
+    "aggregated": 0.4719933079584201,
+    "semeval": {
+      "loss": 0.6795342428269594,
+      "metrics": {
+        "major": 0.4719933079584201,
+        "minor": {
+          "acc": 0.9019284503687417,
+          "f1_micro": 0.042058165548098436,
+          "acc_and_f1_micro": 0.4719933079584201
+        }
+      }
+    }
+  }
+}

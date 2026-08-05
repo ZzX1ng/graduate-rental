@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="560" viewBox="0 0 1040 560">
+<rect width="100%" height="100%" fill="white"/>
+<text x="520.0" y="32" text-anchor="middle" font-family="Arial" font-size="22" font-weight="700" fill="#111827">NER Tenney-style Scalar-mix Layer Weights</text>
+<text x="520.0" y="55" text-anchor="middle" font-family="Arial" font-size="13" fill="#6b7280">Layer 0 is embedding output; layers 1-24 are BERT-large Transformer layers</text>
+<line x1="82" y1="480.00" x2="1008" y2="480.00" stroke="#e5e7eb" stroke-width="1"/>
+<text x="72" y="484.00" text-anchor="end" font-family="Arial" font-size="12" fill="#6b7280">0.000</text>
+<line x1="82" y1="377.00" x2="1008" y2="377.00" stroke="#e5e7eb" stroke-width="1"/>
+<text x="72" y="381.00" text-anchor="end" font-family="Arial" font-size="12" fill="#6b7280">0.020</text>
+<line x1="82" y1="274.00" x2="1008" y2="274.00" stroke="#e5e7eb" stroke-width="1"/>
+<text x="72" y="278.00" text-anchor="end" font-family="Arial" font-size="12" fill="#6b7280">0.040</text>
+<line x1="82" y1="171.00" x2="1008" y2="171.00" stroke="#e5e7eb" stroke-width="1"/>
+<text x="72" y="175.00" text-anchor="end" font-family="Arial" font-size="12" fill="#6b7280">0.060</text>
+<line x1="82" y1="68.00" x2="1008" y2="68.00" stroke="#e5e7eb" stroke-width="1"/>
+<text x="72" y="72.00" text-anchor="end" font-family="Arial" font-size="12" fill="#6b7280">0.080</text>
+<line x1="82" y1="68" x2="82" y2="480" stroke="#111827"/>
+<line x1="82" y1="480" x2="1008" y2="480" stroke="#111827"/>
+<rect x="85.75" y="351.74" width="29.54" height="128.26" fill="#4c78a8"/>
+<rect x="122.79" y="351.03" width="29.54" height="128.97" fill="#4c78a8"/>
+<rect x="159.83" y="351.83" width="29.54" height="128.17" fill="#4c78a8"/>
+<rect x="196.87" y="352.45" width="29.54" height="127.55" fill="#4c78a8"/>
+<rect x="233.91" y="353.70" width="29.54" height="126.30" fill="#4c78a8"/>
+<rect x="270.95" y="350.43" width="29.54" height="129.57" fill="#4c78a8"/>
+<rect x="307.99" y="342.44" width="29.54" height="137.56" fill="#4c78a8"/>
+<rect x="345.03" y="263.33" width="29.54" height="216.67" fill="#4c78a8"/>
+<rect x="382.07" y="256.69" width="29.54" height="223.31" fill="#4c78a8"/>
+<rect x="419.11" y="222.79" width="29.54" height="257.21" fill="#4c78a8"/>
+<rect x="456.15" y="234.97" width="29.54" height="245.03" fill="#4c78a8"/>
+<rect x="493.19" y="213.32" width="29.54" height="266.68" fill="#4c78a8"/>
+<rect x="530.23" y="210.93" width="29.54" height="269.07" fill="#4c78a8"/>
+<rect x="567.27" y="210.50" width="29.54" height="269.50" fill="#4c78a8"/>
+<rect x="604.31" y="200.03" width="29.54" height="279.97" fill="#d95f02"/>
+<rect x="641.35" y="188.39" width="29.54" height="291.61" fill="#d95f02"/>
+<rect x="678.39" y="190.73" width="29.54" height="289.27" fill="#d95f02"/>
+<rect x="715.43" y="206.90" width="29.54" height="273.10" fill="#d95f02"/>
+<rect x="752.47" y="208.75" width="29.54" height="271.25" fill="#d95f02"/>
+<rect x="789.51" y="217.33" width="29.54" height="262.67" fill="#4c78a8"/>
+<rect x="826.55" y="220.35" width="29.54" height="259.65" fill="#4c78a8"/>
+<rect x="863.59" y="310.30" width="29.54" height="169.70" fill="#4c78a8"/>
+<rect x="900.63" y="337.93" width="29.54" height="142.07" fill="#4c78a8"/>
+<rect x="937.67" y="348.03" width="29.54" height="131.97" fill="#4c78a8"/>
+<rect x="974.71" y="355.09" width="29.54" height="124.91" fill="#4c78a8"/>
+<line x1="82" y1="274.00" x2="1008" y2="274.00" stroke="#6b7280" stroke-dasharray="6,5" stroke-width="1.5"/>
+<text x="1002" y="267.00" text-anchor="end" font-family="Arial" font-size="12" fill="#6b7280">uniform 1/25 = 0.040</text>
+<line x1="574.01" y1="68" x2="574.01" y2="480" stroke="#c51b7d" stroke-width="2"/>
+<text x="582.01" y="86" font-family="Arial" font-size="12" fill="#c51b7d">COG=12.78</text>
+<line x1="100.52" y1="480" x2="100.52" y2="485" stroke="#111827"/>
+<text x="100.52" y="502" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">0</text>
+<line x1="174.60" y1="480" x2="174.60" y2="485" stroke="#111827"/>
+<text x="174.60" y="502" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">2</text>
+<line x1="248.68" y1="480" x2="248.68" y2="485" stroke="#111827"/>
+<text x="248.68" y="502" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">4</text>
+<line x1="322.76" y1="480" x2="322.76" y2="485" stroke="#111827"/>
+<text x="322.76" y="502" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">6</text>
+<line x1="396.84" y1="480" x2="396.84" y2="485" stroke="#111827"/>
+<text x="396.84" y="502" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">8</text>
+<line x1="470.92" y1="480" x2="470.92" y2="485" stroke="#111827"/>
+<text x="470.92" y="502" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">10</text>
+<line x1="545.00" y1="480" x2="545.00" y2="485" stroke="#111827"/>
+<text x="545.00" y="502" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">12</text>
+<line x1="619.08" y1="480" x2="619.08" y2="485" stroke="#111827"/>
+<text x="619.08" y="502" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">14</text>
+<line x1="693.16" y1="480" x2="693.16" y2="485" stroke="#111827"/>
+<text x="693.16" y="502" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">16</text>
+<line x1="767.24" y1="480" x2="767.24" y2="485" stroke="#111827"/>
+<text x="767.24" y="502" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">18</text>
+<line x1="841.32" y1="480" x2="841.32" y2="485" stroke="#111827"/>
+<text x="841.32" y="502" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">20</text>
+<line x1="915.40" y1="480" x2="915.40" y2="485" stroke="#111827"/>
+<text x="915.40" y="502" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">22</text>
+<line x1="989.48" y1="480" x2="989.48" y2="485" stroke="#111827"/>
+<text x="989.48" y="502" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">24</text>
+<text x="520.0" y="536" text-anchor="middle" font-family="Arial" font-size="14" fill="#111827">BERT-large layer</text>
+<text transform="translate(22,274.0) rotate(-90)" text-anchor="middle" font-family="Arial" font-size="14" fill="#111827">Scalar-mix weight</text>
+<text x="82" y="552" font-family="Arial" font-size="12" fill="#6b7280">Top weights: L15=0.0566, L16=0.0562, L14=0.0544, L17=0.0530, L18=0.0527</text>
+</svg>

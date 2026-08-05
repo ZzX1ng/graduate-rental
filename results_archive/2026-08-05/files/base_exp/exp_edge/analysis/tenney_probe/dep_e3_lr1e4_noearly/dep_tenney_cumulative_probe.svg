@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="720" viewBox="0 0 1080 720">
+<rect width="100%" height="100%" fill="white"/>
+<text x="540.0" y="32" text-anchor="middle" font-family="Arial" font-size="22" font-weight="700" fill="#111827">DEP Tenney-style Cumulative Probing</text>
+<text x="540.0" y="55" text-anchor="middle" font-family="Arial" font-size="13" fill="#6b7280">Top: cumulative score using layers 0..L; Bottom: incremental contribution from adding layer L</text>
+<line x1="84" y1="410.00" x2="1046" y2="410.00" stroke="#e5e7eb"/>
+<text x="74" y="414.00" text-anchor="end" font-family="Arial" font-size="12" fill="#6b7280">0.850</text>
+<line x1="84" y1="342.00" x2="1046" y2="342.00" stroke="#e5e7eb"/>
+<text x="74" y="346.00" text-anchor="end" font-family="Arial" font-size="12" fill="#6b7280">0.873</text>
+<line x1="84" y1="274.00" x2="1046" y2="274.00" stroke="#e5e7eb"/>
+<text x="74" y="278.00" text-anchor="end" font-family="Arial" font-size="12" fill="#6b7280">0.895</text>
+<line x1="84" y1="206.00" x2="1046" y2="206.00" stroke="#e5e7eb"/>
+<text x="74" y="210.00" text-anchor="end" font-family="Arial" font-size="12" fill="#6b7280">0.918</text>
+<line x1="84" y1="138.00" x2="1046" y2="138.00" stroke="#e5e7eb"/>
+<text x="74" y="142.00" text-anchor="end" font-family="Arial" font-size="12" fill="#6b7280">0.940</text>
+<line x1="84" y1="70.00" x2="1046" y2="70.00" stroke="#e5e7eb"/>
+<text x="74" y="74.00" text-anchor="end" font-family="Arial" font-size="12" fill="#6b7280">0.963</text>
+<line x1="84" y1="70" x2="84" y2="410" stroke="#111827"/>
+<line x1="84" y1="410" x2="1046" y2="410" stroke="#111827"/>
+<polyline points="103.24,377.10 141.72,315.78 180.20,295.51 218.68,282.32 257.16,253.65 295.64,233.19 334.12,216.24 372.60,202.92 411.08,201.43 449.56,197.10 488.04,187.21 526.52,161.86 565.00,150.50 603.48,139.37 641.96,121.97 680.44,113.34 718.92,109.38 757.40,105.87 795.88,103.85 834.36,104.31 872.84,103.05 911.32,104.07 949.80,103.57 988.28,103.33 1026.76,102.90" fill="none" stroke="#1b9e77" stroke-width="2.5"/>
+<circle cx="103.24" cy="377.10" r="3.6" fill="#1b9e77"/>
+<circle cx="141.72" cy="315.78" r="3.6" fill="#1b9e77"/>
+<circle cx="180.20" cy="295.51" r="3.6" fill="#1b9e77"/>
+<circle cx="218.68" cy="282.32" r="3.6" fill="#1b9e77"/>
+<circle cx="257.16" cy="253.65" r="3.6" fill="#1b9e77"/>
+<circle cx="295.64" cy="233.19" r="3.6" fill="#1b9e77"/>
+<circle cx="334.12" cy="216.24" r="3.6" fill="#1b9e77"/>
+<circle cx="372.60" cy="202.92" r="3.6" fill="#1b9e77"/>
+<circle cx="411.08" cy="201.43" r="3.6" fill="#1b9e77"/>
+<circle cx="449.56" cy="197.10" r="3.6" fill="#1b9e77"/>
+<circle cx="488.04" cy="187.21" r="3.6" fill="#1b9e77"/>
+<circle cx="526.52" cy="161.86" r="3.6" fill="#1b9e77"/>
+<circle cx="565.00" cy="150.50" r="3.6" fill="#1b9e77"/>
+<circle cx="603.48" cy="139.37" r="3.6" fill="#1b9e77"/>
+<circle cx="641.96" cy="121.97" r="3.6" fill="#1b9e77"/>
+<circle cx="680.44" cy="113.34" r="3.6" fill="#1b9e77"/>
+<circle cx="718.92" cy="109.38" r="3.6" fill="#1b9e77"/>
+<circle cx="757.40" cy="105.87" r="3.6" fill="#1b9e77"/>
+<circle cx="795.88" cy="103.85" r="3.6" fill="#1b9e77"/>
+<circle cx="834.36" cy="104.31" r="3.6" fill="#1b9e77"/>
+<circle cx="872.84" cy="103.05" r="3.6" fill="#1b9e77"/>
+<circle cx="911.32" cy="104.07" r="3.6" fill="#1b9e77"/>
+<circle cx="949.80" cy="103.57" r="3.6" fill="#1b9e77"/>
+<circle cx="988.28" cy="103.33" r="3.6" fill="#1b9e77"/>
+<circle cx="1026.76" cy="102.90" r="5.5" fill="#d95f02"/>
+<text x="896.00" y="92.90" font-family="Arial" font-size="12" fill="#d95f02">best L24=0.9519</text>
+<text transform="translate(24,240.0) rotate(-90)" text-anchor="middle" font-family="Arial" font-size="14" fill="#111827">Cumulative major</text>
+<line x1="84" y1="646.00" x2="1046" y2="646.00" stroke="#e5e7eb"/>
+<text x="74" y="650.00" text-anchor="end" font-family="Arial" font-size="12" fill="#6b7280">-0.023</text>
+<line x1="84" y1="601.50" x2="1046" y2="601.50" stroke="#e5e7eb"/>
+<text x="74" y="605.50" text-anchor="end" font-family="Arial" font-size="12" fill="#6b7280">-0.011</text>
+<line x1="84" y1="557.00" x2="1046" y2="557.00" stroke="#e5e7eb"/>
+<text x="74" y="561.00" text-anchor="end" font-family="Arial" font-size="12" fill="#6b7280">+0.000</text>
+<line x1="84" y1="512.50" x2="1046" y2="512.50" stroke="#e5e7eb"/>
+<text x="74" y="516.50" text-anchor="end" font-family="Arial" font-size="12" fill="#6b7280">+0.011</text>
+<line x1="84" y1="468.00" x2="1046" y2="468.00" stroke="#e5e7eb"/>
+<text x="74" y="472.00" text-anchor="end" font-family="Arial" font-size="12" fill="#6b7280">+0.023</text>
+<line x1="84" y1="468" x2="84" y2="646" stroke="#111827"/>
+<line x1="84" y1="646" x2="1046" y2="646" stroke="#111827"/>
+<line x1="84" y1="557.00" x2="1046" y2="557.00" stroke="#6b7280" stroke-width="1"/>
+<rect x="89.00" y="557.00" width="28.48" height="0.00" fill="#7570b3" opacity="0.82"/>
+<rect x="127.48" y="477.54" width="28.48" height="79.46" fill="#7570b3" opacity="0.82"/>
+<rect x="165.96" y="530.72" width="28.48" height="26.28" fill="#7570b3" opacity="0.82"/>
+<rect x="204.44" y="539.91" width="28.48" height="17.09" fill="#7570b3" opacity="0.82"/>
+<rect x="242.92" y="519.84" width="28.48" height="37.16" fill="#7570b3" opacity="0.82"/>
+<rect x="281.40" y="530.49" width="28.48" height="26.51" fill="#7570b3" opacity="0.82"/>
+<rect x="319.88" y="535.03" width="28.48" height="21.97" fill="#7570b3" opacity="0.82"/>
+<rect x="358.36" y="539.73" width="28.48" height="17.27" fill="#7570b3" opacity="0.82"/>
+<rect x="396.84" y="555.08" width="28.48" height="1.92" fill="#7570b3" opacity="0.82"/>
+<rect x="435.32" y="551.39" width="28.48" height="5.61" fill="#7570b3" opacity="0.82"/>
+<rect x="473.80" y="544.17" width="28.48" height="12.83" fill="#7570b3" opacity="0.82"/>
+<rect x="512.28" y="524.15" width="28.48" height="32.85" fill="#7570b3" opacity="0.82"/>
+<rect x="550.76" y="542.28" width="28.48" height="14.72" fill="#7570b3" opacity="0.82"/>
+<rect x="589.24" y="542.58" width="28.48" height="14.42" fill="#7570b3" opacity="0.82"/>
+<rect x="627.72" y="534.45" width="28.48" height="22.55" fill="#7570b3" opacity="0.82"/>
+<rect x="666.20" y="545.82" width="28.48" height="11.18" fill="#7570b3" opacity="0.82"/>
+<rect x="704.68" y="551.86" width="28.48" height="5.14" fill="#7570b3" opacity="0.82"/>
+<rect x="743.16" y="552.45" width="28.48" height="4.55" fill="#7570b3" opacity="0.82"/>
+<rect x="781.64" y="554.38" width="28.48" height="2.62" fill="#7570b3" opacity="0.82"/>
+<rect x="820.12" y="557.00" width="28.48" height="0.60" fill="#bdbdbd" opacity="0.82"/>
+<rect x="858.60" y="555.36" width="28.48" height="1.64" fill="#7570b3" opacity="0.82"/>
+<rect x="897.08" y="557.00" width="28.48" height="1.32" fill="#bdbdbd" opacity="0.82"/>
+<rect x="935.56" y="556.36" width="28.48" height="0.64" fill="#7570b3" opacity="0.82"/>
+<rect x="974.04" y="556.69" width="28.48" height="0.31" fill="#7570b3" opacity="0.82"/>
+<rect x="1012.52" y="556.45" width="28.48" height="0.55" fill="#7570b3" opacity="0.82"/>
+<line x1="103.24" y1="646" x2="103.24" y2="651" stroke="#111827"/>
+<text x="103.24" y="668" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">0</text>
+<line x1="180.20" y1="646" x2="180.20" y2="651" stroke="#111827"/>
+<text x="180.20" y="668" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">2</text>
+<line x1="257.16" y1="646" x2="257.16" y2="651" stroke="#111827"/>
+<text x="257.16" y="668" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">4</text>
+<line x1="334.12" y1="646" x2="334.12" y2="651" stroke="#111827"/>
+<text x="334.12" y="668" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">6</text>
+<line x1="411.08" y1="646" x2="411.08" y2="651" stroke="#111827"/>
+<text x="411.08" y="668" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">8</text>
+<line x1="488.04" y1="646" x2="488.04" y2="651" stroke="#111827"/>
+<text x="488.04" y="668" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">10</text>
+<line x1="565.00" y1="646" x2="565.00" y2="651" stroke="#111827"/>
+<text x="565.00" y="668" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">12</text>
+<line x1="641.96" y1="646" x2="641.96" y2="651" stroke="#111827"/>
+<text x="641.96" y="668" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">14</text>
+<line x1="718.92" y1="646" x2="718.92" y2="651" stroke="#111827"/>
+<text x="718.92" y="668" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">16</text>
+<line x1="795.88" y1="646" x2="795.88" y2="651" stroke="#111827"/>
+<text x="795.88" y="668" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">18</text>
+<line x1="872.84" y1="646" x2="872.84" y2="651" stroke="#111827"/>
+<text x="872.84" y="668" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">20</text>
+<line x1="949.80" y1="646" x2="949.80" y2="651" stroke="#111827"/>
+<text x="949.80" y="668" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">22</text>
+<line x1="1026.76" y1="646" x2="1026.76" y2="651" stroke="#111827"/>
+<text x="1026.76" y="668" text-anchor="middle" font-family="Arial" font-size="12" fill="#111827">24</text>
+<text x="540.0" y="700" text-anchor="middle" font-family="Arial" font-size="14" fill="#111827">BERT-large layer</text>
+<text transform="translate(24,557.0) rotate(-90)" text-anchor="middle" font-family="Arial" font-size="14" fill="#111827">Delta major</text>
+</svg>

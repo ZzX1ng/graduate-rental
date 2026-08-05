@@ -1,0 +1,27 @@
+{
+  "mode": "uniform_fake_quant_ptq",
+  "task": "dep",
+  "base_run": "formal_e3_ms256_retry1",
+  "base_checkpoint": "/cluster/home/zhangzx/my_project/base_exp/exp_edge/runs/bert-large-uncased/dep/formal_e3_ms256_retry1/best_model.p",
+  "weight_bits": 8,
+  "activation_bits": 8,
+  "linear_modules": "bert_encoder_qkv_attn_out_ffn_in_ffn_out",
+  "module_count": 144,
+  "weight_granularity": "per_tensor_symmetric",
+  "activation_granularity": "dynamic_per_tensor_symmetric",
+  "outlier_aware": false,
+  "val_metrics": {
+    "aggregated": 0.932260770777083,
+    "dep": {
+      "loss": 0.011820433058975783,
+      "metrics": {
+        "major": 0.932260770777083,
+        "minor": {
+          "acc": 0.995781799727435,
+          "f1_micro": 0.8687397418267311,
+          "acc_and_f1_micro": 0.932260770777083
+        }
+      }
+    }
+  }
+}
