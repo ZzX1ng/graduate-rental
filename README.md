@@ -11,16 +11,16 @@
 1. **Layer probing / 表征诊断**：冻结 BERT-large，只取某一层输出训练任务 head/probe classifier，用该层输出的任务指标判断该层表征是否足够可分。该方法能说明“某层表征含有多少任务信息”，但不能直接证明“后续层可以删除”或“该层一定最该保护”。若要证明删层，需要额外做 truncated BERT fine-tuning。
 2. **非线性近似基础**：已实现 GELU PWL 的 uniform 和 layer-wise 段数配置，并完成大量 SPR2、SemEval、NER、DEP、Coref 等实验。总体结论是：uniform 激进近似会损失明显，少量层保留更高精度常能恢复性能；但 layer probing 精确排序对 PWL 最优层的预测不稳定。后续非线性方法不应局限于 PWL，可继续比较 LUT-GELU、quantized LUT、分段二次、Softmax/LayerNorm 近似等硬件友好方案。
 3. **线性压缩基础**：已实现 FFN SVD low-rank 和 FFN neuron pruning 初探。uniform low-rank 呈现 rank 越高精度越好，但当前 probing-guided layer-wise low-rank 未体现稳定优势；neuron pruning 退化较明显。后续线性方法不应局限于当前 FFN 压缩，可考虑 layer-wise quantization、outlier-aware quantization、attention/FFN 结构化剪枝、低秩分解等方案。
-4. **量化主线已完成 uniform、单侧、双侧 outlier-aware PTQ 和首轮 probing-guided 同 BOP 验证**：NER、DEP、SemEval 的 uniform PTQ 已完成；SemEval W4A4 双侧 outlier16/outlier8 两套 30 组比例网格均已完成，outlier8 成本-精度边界更优。固定 train calibration、固定 `seed=20260806` 和 measured-BOP 二次匹配后，low budget probing 在 `0.5375%` BOP 下取得 `major=0.866604`，较同成本 uniform 高 `0.008939` 且优于 early/late/inverse/random；boundary probing 较 uniform 高 `0.001599`，但 early 更高，说明 probing 的优势具有预算依赖性。当前不做 QAT，也不把 probing 得分直接等同于逐层数值量化敏感度；下一步优先补 low budget 多 calibration seeds 和 cost/reconstruction-only 对照。
+4. **量化主线已完成 uniform、双侧 outlier-aware PTQ 和 probing-guided 同 BOP 多 seed 验证**：NER、DEP、SemEval 的 uniform PTQ 已完成；SemEval W4A4 双侧 outlier16/outlier8 两套 30 组比例网格均已完成，outlier8 成本-精度边界更优。NER 已完成 W4A4+outlier8 的 30 点动态阈值网格、9 点固定 train calibration 超低预算扫描、8 点 INT2 压力测试，以及 low/boundary 两档预算、四 calibration seed、六策略的 88 个 pilot/BOP-fix run；probing 在两档都是 4/4 seed 优于 uniform，但 late 平均更高。DEP 已完成 12 个统一比例预算点、6 个 `floor=0` probing 点、4 个 `floor50` 定位点、一个 seed 的两档六策略 pilot/BOP-fix，以及 low/boundary 的四 seed paired uniform/probing 验证。DEP 的早期无 floor 分配会在超低预算下塌缩，`floor50` 证明逐层最低保护是必要约束；正式 paired-BOP 结果见 2026-08-09 DEP 小节。SemEval low budget probing 则在四 seed 中均优于 uniform、early、late 和 `random_s29`。当前不做 QAT，也不把 probing 得分直接等同于逐层数值量化敏感度；所有分类结果必须同时报告 `major` 和 `f1_micro`，不能用高 `acc` 掩盖多数类塌缩。
 
-目前算法主线已进一步收敛为：**以 probing-guided outlier-aware PTQ 加速线性计算，以 GELU 等特殊函数近似处理非线性计算，算法有效后再做协同硬件设计**。量化侧先用统一离群比例验证低比特精度恢复，再构建暂名 `L_PTH` 的目标函数，把层重建误差、算法计算负载和 fixed-layer probing 任务先验联合起来；最终在相同理论 BOP 预算下比较 uniform、cost-only、random、inverse-probing 与 probing-guided 分配。
+目前算法主线已进一步收敛为：**以 fixed-probing-guided、equal-BOP constrained outlier-aware PTQ 加速线性计算，以 GELU 等特殊函数近似处理非线性计算，算法有效后再做协同硬件设计**。当前量化方法用 fixed probing 决定 24 层之间的相对离群值预算形状，用 measured BOP 作为全模型计算代价硬约束；它已经考虑全局 cost，但尚未把逐层 reconstruction error 纳入分配目标。第一版论文方法可以直接比较 uniform、early/late、random、inverse-probing 与 probing-guided 分配；reconstruction-guided 或 probing+reconstruction `L_PTH` 保留为可选增强，不作为当前必做前置项。
 
 已有较有价值的实验观察：
 
 - **SemEval** 对 PWL 最敏感，e10 平均 5.0 段的 mid-high `13-18` 配置几乎贴近 baseline，且明显优于同平均段数 early/late，是当前最支持中高层保护的证据，可作为后续方法筛选的重点任务。
 - **SPR2** uniform PWL2 明显崩溃，但少量层升到 PWL4 可恢复到接近 baseline，说明 layer-wise 近似有价值；不过 single-layer scan 层间差距很小，probing 排序不稳定。
 - **Coref** uniform PWL2 崩得很厉害，但加少量 PWL4 层可恢复，说明极低段数近似下层配置影响显著；目前 late/aware 谁更优不稳定。
-- **NER、DEP、POS、nonterminal、SRL** 对 PWL4 普遍不敏感，适合作为“低敏感任务”或补充任务，不宜作为主证明对象。
+- **NER、DEP、POS、nonterminal、SRL** 对 PWL4 普遍不敏感，适合作为非线性近似的“低敏感任务”或补充任务；但 DEP 对 naive uniform PTQ 很敏感，并已成为验证 outlier-aware probing-guided 线性加速的主任务之一。
 - **FFN SVD low-rank** 的 uniform rank 结果有清晰压缩敏感性，但 layer-wise 低秩暂不支持当前 probing 窗口，说明线性压缩需要重新筛选方法和实验设计，不能只沿用 FFN low-rank。
 
 如果新开对话，建议让模型优先阅读：
@@ -52,6 +52,7 @@
 - 基础模型：`bert-large-uncased`，已提前导出到本地，Slurm 作业中不再临时下载。
 - 当前环境：`anaconda3/2024.02` 模块下的 `pytorch-test` conda 环境。
 - 当前量化实验环境：租用 RTX 4090，项目路径 `/root/autodl-tmp/master-gra/my_project`，Python 环境 `/home/zhangzx/master-gra/conda-envs/graduate`；PyTorch `2.5.1+cu121`、Transformers `5.7.0`。2026-08-05 的 outlier-aware PTQ 批次均在该环境串行运行，跨配置比较使用同一 checkpoint、cache、代码和 GPU。
+- 当前量化状态（2026-08-09）：SemEval、NER、DEP 三主任务都已完成 W4A4+双侧 outlier8 的预算筛选与 probing-guided 验证。SemEval low 中 probing 是强正向结果；NER 中 probing 4/4 seed 优于 uniform，但 late 平均更高；DEP 中 `floor=0` 在超低预算下不稳定，加入 `floor50` 后完成 low/boundary 四 seed paired uniform/probing。统一结论是 probing 可作为任务相关预算先验，但必须与逐层最低保护和 measured-BOP 约束结合，不能把 fixed probing 分数直接当作数值量化敏感度。
 - 已准备任务：**已完成端到端（数据 → cache `ms256` → 多 epoch 训练）** 的为 **`dep`、`semeval`、`ner`**：均有 **`best_model.p`** 与 **`val_metrics.json`**（`dep`×4、`semeval`×6、`ner`×4 个带 checkpoint 的 run，见各 `runs/bert-large-uncased/<task>/`）。**`spr2`**：JSONL 与 **`cache/bert-large-uncased/spr2/`**（train/val/test/val_labels，`ms256`）就绪；Slurm **`17202`–`17205`**（1/3/5/10 epoch）均已 **`COMPLETED`、`ExitCode=0`**（Walltime 见作业表），**`runs/bert-large-uncased/spr2/`** 下已有对应 **`RUN_NAME`** 与 **`best_model.p`**。**OntoNotes 四任务 `pos` / `nonterminal` / `srl` / `coref`**：JSONL 与配置已在仓库；**cache `ms512`** 已由作业 **`17206`** 完成（**`COMPLETED`**，`16:23:46`），**`cache/bert-large-uncased/{pos,nonterminal,srl,coref}/`** 含 **`train`/`val`/`test`/`val_labels`**。**`smoke_e1_ms512_*` 训练试探**（作业 **`17212`–`17215`**）均已 **`COMPLETED`、`ExitCode=0`**（Walltime 见作业表），各 **`runs/bert-large-uncased/<task>/smoke_e1_ms512_*/`** 含 **`best_model.p`** 与 **`val_metrics.json`**（默认 **早停**，进度条未必跑满 runconfig 中的名义 **`max_steps`**，见「验证集指标」一节 OntoNotes 表上方说明）。**Formal `ms512` 多 epoch（无早停）**：**`17222`–`17233`**（**12** 作业，**`NO_IMPROVEMENTS_FOR_N_EVALS=0`**）。截至 2026-06-09 文档更新：**`17222`–`17233`** 已全部 **`COMPLETED`、`ExitCode=0`**；四个 OntoNotes 任务的 formal **3/5/10 ep** run 均有 **`best_model.p`** 与 **`val_metrics.json`**。指标见「验证集指标」OntoNotes formal 表。旧作业 **`17196`**（`ms256`）于 POS 失败，不完整 cache 已删除。
 - Slurm：`dep`、`semeval`、`ner` 多轮训练均已完成（见作业表与验证集指标）。批量 test 作业 `17195` 已结束，但其 **`test_summary.tsv` 与当时各 `test_eval/test_metrics.json` 未对齐真实 test gold，不可作为有效 test**；有效 test 须用 `tools/evaluate_edge_test.py` 或 `test_edge_*.sh` 重跑（默认写入 `test_<task>.tsv`）。**`17207`**（`edge_test_real_gold`）已 **`COMPLETED`**（`00:21:56`），**`test_semeval.tsv` / `test_ner.tsv` / `test_spr2.tsv`** 已为批量行；**`dep`** 的 **`test_dep.tsv`** 已补齐 4 个 run。OntoNotes test 作业 **`17564`–`17567`**（`pos` / `nonterminal` / `srl` / `coref`）已全部 **`COMPLETED`、`ExitCode=0`**，并写入 **`test_pos.tsv` / `test_nonterminal.tsv` / `test_srl.tsv` / `test_coref.tsv`**。当前队列请用 `squeue -u "$USER"` 自查。
 - 备份状态：租用服务器独立快照使用私有仓库 `https://github.com/ZzX1ng/graduate-rental`，与旧仓库 `https://github.com/ZzX1ng/graduate` 分开；代码、README 和精简实验结果已推送。子模块 **`base_exp/jiant`**、**`tools/jiant-v1-legacy`** 仍有本地补丁未单独推送至各自上游，克隆后需应用 `patches/jiant-local-changes.patch`。
@@ -327,10 +328,25 @@ test   276
 | `20260805_dual1` | SemEval W4A4 双侧 W/A-outlier16 锚点 | `COMPLETED`，4/4，0 failed | 租用 RTX 4090 | `17:31:30`-`17:36:13` | 四个 W/A 比例组合全部恢复到 W8A8 附近或以上；状态表：`base_exp/exp_edge/local_logs/semeval_w4a4_dual_20260805_dual1/status.tsv`。 |
 | `20260805_full_grid1` | SemEval W4A4 双侧 W/A-outlier16 完整网格 | `COMPLETED`，26 completed + 4 skipped existing，0 failed | 租用 RTX 4090 | `20:29:22`-`21:00:20` | 权重比例 `{0.1,0.25,0.5,1,2,4}%` × 激活比例 `{0.5,1,2,4,6}%`，共 30 组均有结果；状态表：`base_exp/exp_edge/local_logs/semeval_w4a4_dual_grid_20260805_full_grid1/status.tsv`。 |
 | `20260805_out8_full_grid1` | SemEval W4A4 双侧 W/A-outlier8 完整网格 | `COMPLETED`，30/30，0 failed | 租用 RTX 4090 | `21:36:57`-`22:13:13` | 与 outlier16 使用相同 6×5 比例网格，全部完整 validation；状态表：`base_exp/exp_edge/local_logs/semeval_w4a4_dual_out8_grid_20260805_out8_full_grid1/status.tsv`。 |
+| `20260805_w2w4_out8_screen1` | SemEval W2A4/W4A2 + W/A-outlier8 INT2 筛选 | `COMPLETED`，8/8，0 failed | 租用 RTX 4090 | `23:06:30`-`23:14:45` | W2A4、W4A2 各 1 个 uniform 与 3 个双侧保护点；均未恢复到 W8A8，当前不扩大 INT2 网格。状态表：`base_exp/exp_edge/local_logs/semeval_w2a4_w4a2_out8_20260805_w2w4_out8_screen1/status.tsv`。 |
 | `20260806_pg_out8_1` | SemEval W4A4 + outlier8 probing-guided 名义 BOP 首轮 | `COMPLETED`，16/16，0 failed；`seed` 未固定，诊断用 | 租用 RTX 4090 | `00:36:19`-`00:52:58` | 两档预算各比较 uniform、fixed-probing、inverse、early、late、random×3；各 run 的 calibration seed 不同，不能作为正式策略对比。状态表：`base_exp/exp_edge/local_logs/semeval_w4a4_probe_guided_out8_20260806_003619/status.tsv`。 |
 | `20260806_pg_out8_bopfix1` | 未固定 seed 的 measured-BOP 二次匹配 | `COMPLETED`，14/14，0 failed；诊断用 | 租用 RTX 4090 | `00:53`-`01:07:37` | 运行路径完整，但 calibration seed 仍逐 run 变化；结果只用于暴露随机性和校验 BOP 修正代码。状态表：`base_exp/exp_edge/local_logs/semeval_w4a4_probe_guided_out8_bopfix1_20260806_bopfix1/status.tsv`。 |
 | `20260806_pg_out8_fixedseed1` | 固定 `seed=20260806` 的 probing-guided 名义 BOP 首轮 | `COMPLETED`，16/16，0 failed | 租用 RTX 4090 | `01:07:40`-`01:24:35` | 30 份 fixed-seed 首轮/BOP-fix2 日志均核对为同一 seed；首轮用于计算各策略 measured-BOP 修正系数。状态表：`base_exp/exp_edge/local_logs/semeval_w4a4_probe_guided_out8_fixedseed_20260806_fixedseed1/status.tsv`。 |
 | `20260806_pg_out8_bopfix2_fixedseed1` | 固定 seed 的 measured-BOP 二次匹配 | `COMPLETED`，14/14，0 failed | 租用 RTX 4090 | `01:24:35`-`01:39:42` | 正式比较批；low probing 在同 BOP 下第一，boundary probing 高于 uniform 但低于 early。状态表：`base_exp/exp_edge/local_logs/semeval_w4a4_probe_guided_out8_bopfix2_fixedseed_20260806_bopfix2_fixedseed1/status.tsv`。 |
+| `20260807_low_multiseed2` | SemEval low-budget probing 多 calibration seed 复验 | `COMPLETED`，27/27，0 failed | 租用 RTX 4090 | `2026-08-06 19:55:48`-`20:24:01` | 新增 seed `20260807/08/09`；每个 seed 运行 5 个 pilot 和 4 个 measured-BOP fix，并与已有 `20260806` 汇总。状态表：`base_exp/exp_edge/local_logs/semeval_w4a4_probe_guided_out8_low_multiseed_20260807_low_multiseed2/status.tsv`。 |
+| `20260806_late_multiseed1` | SemEval low-budget late 多 seed 补充 | `COMPLETED`，6/6，0 failed | 租用 RTX 4090 | `20:41:10`-`20:46:33` | 对 seed `20260807/08/09` 各补 1 个 late pilot 和 1 个 measured-BOP fix，复用已有 uniform 锚点；四 seed 六策略汇总已重写。状态表：`base_exp/exp_edge/local_logs/semeval_w4a4_probe_guided_out8_late_multiseed_20260806_late_multiseed1/status.tsv`。 |
+| `20260806_ner_budget_grid1` | NER W4A4 + 双侧 outlier8 动态阈值完整网格 | `COMPLETED`，30/30，0 failed | 租用 RTX 4090 | 2026-08-06 | `6×5` 比例网格全部完成；用于粗筛预算，不与固定 train calibration 正式结果直接排名。状态表：`base_exp/exp_edge/local_logs/ner_w4a4_dual_out8_grid_20260806_ner_budget_grid1/status.tsv`。 |
+| `20260807_ultralow1` / `refine1` | NER W4A4 + 双侧 outlier8 固定校准超低预算扫描 | `COMPLETED`，6/6 + 3/3，0 failed | 租用 RTX 4090 | 2026-08-07 | 找到明显性能转折区，并选定 low=`W0.03125%/A0.15625%`、boundary=`W0.04375%/A0.21875%`。状态表位于 `base_exp/exp_edge/local_logs/ner_w4a4_ultralow*_20260807_*/status.tsv`。 |
+| `20260807_int2_screen1` / `int2_uniform_repair1` | NER W2A4/W4A2 + outlier8 压力测试 | 最终 `COMPLETED`，8 个配置均有有效结果；原批次 2 个 uniform 曾失败，repair 2/2 完成 | 租用 RTX 4090 | 2026-08-07 | 原 `w2a4_uniform`/`w4a2_uniform` 因无 A-outlier 模块却触发 activation calibration 而报错，随后由 repair 批次补齐；W2A4 三个保护点均不可用，W4A2 最佳 `major=0.932899`、`f1_micro=0.878107`，但 BOP overhead 已达 `18.6231%`，不作为主线。 |
+| `20260807_ner_pg_seed1` / `ner_pg_remaining1` | NER low/boundary 六策略四 seed pilot + BOP-fix | `COMPLETED`，88/88，0 failed | 租用 RTX 4090 | 2026-08-07 | seed `20260806-20260809`；正式 48 个同 BOP 结果显示 probing 两档均 4/4 优于 uniform，但 late 平均更强。状态表：`base_exp/exp_edge/local_logs/ner_w4a4_probe_guided_out8_*/status.tsv`。 |
+| `20260807_dep_budget1` / `20260808_dep_boundary_refine1` | DEP W4A4 + 双侧 outlier8 固定校准预算扫描 | `COMPLETED`，6/6 + 6/6，0 failed | 租用 RTX 4090 | 2026-08-07 至 2026-08-08 | 粗扫与 `.055/.275`-`.090/.450` 六点细化均完成；固定 `seed=20260806`、16 calibration batch、完整 validation。状态表：`base_exp/exp_edge/local_logs/dep_w4a4_out8_*/status.tsv`。 |
+| `20260807_dep_low4seed1` | DEP 旧 low=`W0.05%/A0.25%` 无 floor 六策略四 seed 诊断 | `COMPLETED`，正式汇总 24 点 | 租用 RTX 4090 | 2026-08-07 | probing 在 4/4 seed 均塌缩，证明 raw probing 在超低预算下会让部分层失去必要保护；该批仅作 floor 动机，不作正式正向结果。状态表：`base_exp/exp_edge/local_logs/dep_w4a4_probe_guided_out8_low_*/status.tsv`。 |
+| `20260808_dep_raw_probe_six1` | DEP 六预算点 `floor=0` probing 扫描 | `COMPLETED`，5 completed + 1 reused，0 failed | 租用 RTX 4090 | `08:42:21`-`09:52:39` | `.055/.275` 严重塌缩，预算升高后逐步恢复；用于定位 raw probing 的稳定性边界。状态表：`base_exp/exp_edge/local_logs/dep_w4a4_raw_probing_six_budget_scan_20260808_dep_raw_probe_six1/status.tsv`。 |
+| `20260808_dep_floor50_boundary1` | DEP `floor50` probing 三个 boundary 定位点 | `COMPLETED`，3/3，0 failed | 租用 RTX 4090 | `17:31:33`-`18:13:24` | 完成 `.065/.325`、`.070/.350`、`.080/.400`；结合已有 `.055/.275` 确定 low/boundary。状态表：`base_exp/exp_edge/local_logs/dep_w4a4_floor50_probing_boundary_scan_20260808_dep_floor50_boundary1/status.tsv`。 |
+| `20260808_dep_floor50_lb_seed1` | DEP floor50 low/boundary 六策略 fixed-seed pilot | `COMPLETED`，8 completed + 4 reused，0 failed | 租用 RTX 4090 | `18:47:41`-`20:39:53` | seed `20260806`；probing 是最好的非 uniform 策略且以更低 measured BOP 接近 uniform。状态表：`base_exp/exp_edge/local_logs/dep_w4a4_floor50_low_boundary_six_strategy_20260808_dep_floor50_lb_seed1/status.tsv`。 |
+| `20260808_dep_floor50_bopfix2_seed1` | DEP floor50 low/boundary 六策略 BOP-fix2 | `COMPLETED`，10/10，0 failed | 租用 RTX 4090 | `21:31:11`-`23:51:37` | probing 在两档近似同 BOP 下均高于 uniform；low 的 inverse/late/random 修正后 BOP 失配并塌缩，不用于严格同 BOP排名。状态表：`base_exp/exp_edge/local_logs/dep_w4a4_floor50_low_boundary_bopfix2_20260808_dep_floor50_bopfix2_seed1/status.tsv`。 |
+| `20260809_dep_floor50_paired3seeds1` | DEP floor50 low/boundary 余下三 seed paired uniform/probing + BOP-fix2 | `COMPLETED`，18/18，0 failed | 租用 RTX 4090 | 2026-08-09 | seed `20260807/08/09`，每个 seed 4 pilot + 2 probing BOP-fix；与 `20260806` 合并为四 seed 正式证据。状态表：`base_exp/exp_edge/local_logs/dep_w4a4_floor50_low_boundary_paired_multiseed_20260809_dep_floor50_paired3seeds1/status.tsv`。 |
+| `20260809_dep_floor50_remaining3seeds1` | DEP floor50 low/boundary 余下三 seed 的 inverse/early/late/random pilot + BOP-fix2 | `RUNNING`，计划新增 48 个运行 | 租用 RTX 4090 | 2026-08-09 `06:41:20` 开始 | seed `20260807/08/09`；每个 seed 先新增两档四策略共 8 个 pilot，再新增 8 个 BOP-fix2；已有 uniform/probing 自动复用。总状态表：`base_exp/exp_edge/local_logs/dep_w4a4_floor50_remaining_strategies_multiseed_20260809_dep_floor50_remaining3seeds1/status.tsv`。 |
 
 
 ### 验证集指标（`val_metrics.json`）
@@ -1819,9 +1835,40 @@ BOP_overhead =
 
 outlier8 最高点距 FP32 validation `0.883600` 仅 `0.001398`。当前两批仍采用 dynamic sampled activation quantile；在固定 calibration 阈值和独立 test 复验前，不能把该差距解释为稳定泛化收益。
 
-**5. W4A4 + outlier8 probing-guided 同 BOP 实验结果（2026-08-06）**
+**5. W2A4/W4A2 + outlier8 INT2 压力测试：选定比例内未恢复**
+
+`20260805_w2w4_out8_screen1` 只做候选点筛选，没有扩大为完整网格。8/8 配置全部完成，使用与此前 W4A4 网格相同的 SemEval `formal_e10_ms256` checkpoint 和 validation；激活离群值仍由每次 forward 的 dynamic sampled quantile 选择，因此本批用于路线淘汰，不作为最终部署结果。
+
+| 主路径 | W/A target | W actual | A actual | acc | f1_micro | major | measured BOP overhead |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| W2A4 uniform | `0% / 0%` | 0% | 0% | 0.947368 | 0.000000 | 0.473684 | 0% |
+| W2A4 + outlier8 | `0.5% / 1%` | 0.500011% | 0.991200% | 0.939810 | 0.007553 | 0.473682 | 2.4948% |
+| W2A4 + outlier8 | `1% / 2%` | 1.000007% | 1.956359% | 0.235079 | 0.096717 | 0.165898 | 5.0065% |
+| W2A4 + outlier8 | `2% / 4%` | 2.000014% | 3.960301% | 0.574825 | 0.091069 | 0.332947 | 10.1800% |
+| W4A2 uniform | `0% / 0%` | 0% | 0% | 0.947368 | 0.000000 | 0.473684 | 0% |
+| W4A2 + outlier8 | `0.25% / 2%` | 0.249990% | 1.963742% | 0.947368 | 0.000000 | 0.473684 | 6.1131% |
+| W4A2 + outlier8 | `0.5% / 4%` | 0.500011% | 3.968243% | 0.948559 | 0.060251 | 0.504405 | 12.4426% |
+| W4A2 + outlier8 | `1% / 6%` | 1.000007% | 5.979666% | 0.951170 | 0.284564 | **0.617867** | 19.1030% |
+
+uniform INT2 的 `major=0.473684` 来自多数类预测（`acc=0.947368`、`f1_micro=0`），不能视为保留了约一半有效性能。选定 W2A4 保护点均未恢复，且对比例不单调；W4A2 随激活保护增加有所改善，但最高点仍比 W8A8 validation `0.876100` 低 `0.258233`，同时 measured BOP overhead 已达 `19.1030%`。因此当前证据不支持把 INT2 作为论文主线，也不继续扩大完整网格；W4A4 + outlier8 保持为主候选，INT2 仅作为“更激进位宽为何失败”的压力测试和边界消融。
+
+机器可读结果位于各 run 的 `val_metrics.json`、`quant_summary.json`、`outlier_runtime_stats.json`，批次状态表为：
+
+```text
+base_exp/exp_edge/local_logs/semeval_w2a4_w4a2_out8_20260805_w2w4_out8_screen1/status.tsv
+```
+
+**6. W4A4 + outlier8 probing-guided 同 BOP 实验结果（2026-08-06）**
 
 本阶段不再沿用 validation batch 内动态 quantile。正式验证前使用 SemEval train cache 的固定 16 个 batch 做无梯度 calibration；每个 encoder linear module 最多保留 65536 个绝对值样本，据该模块所属层的目标激活离群比例计算一次阈值，validation 全程冻结。冒烟测试已确认 24 层、每层 6 个 linear 共 144 个模块均生成阈值文件，且 `quant_summary.json`、`outlier_runtime_stats.json`、`activation_calibration_stats.json` 均可完整落盘。
+
+**完整网格与正式 uniform-budget 结果的口径差异。** 完整 outlier8 网格中的 `W0.1%/A0.5%` 得到 `major=0.868908`、measured BOP overhead `0.558965%`，高于正式四-seed 实验中的 uniform-budget 结果；例如固定 seed `20260806` 时为 `major=0.857665`、measured BOP overhead `0.537338%`，seed `20260807` 时为 `major=0.848832`。这不能只解释为 seed 未固定，原因包括：
+
+1. 完整网格沿用 validation batch 内动态 quantile，每个 validation batch 根据当前激活重新确定离群阈值；该 run 使用随机生成的 `seed=1698059548`，没有 `activation_calibration_stats.json`，日志中也没有 train calibration。动态阈值属于测试时自适应口径，通常比部署时冻结阈值更有利。
+2. 正式实验固定 16 个 train calibration batches、每模块最多 65536 个样本，先生成 144 个模块的阈值并在 validation 全程冻结。calibration seed 会改变抽取的训练 batch，因此确实造成一部分波动，但它不是两批结果差异的唯一变量。
+3. 两者实际计算负载也不完全相同：完整网格点的 measured BOP overhead 比 seed `20260806` 的正式 uniform 高约 `0.0216` 个百分点，不能视为严格同 BOP 比较。
+
+因此，完整网格只用于筛选候选 W/A 预算和观察成本-精度趋势，不与正式 uniform-budget 结果直接排名。论文中的策略结论只采用固定 train calibration、paired calibration seed 和 measured-BOP 二次匹配后的结果。这里的 `uniform-budget outlier8` 是 `W4A4 + 双侧 outlier8` 在 24 层均匀分配离群预算，不是无离群保护的 `W4A4 no-outlier uniform PTQ`。
 
 fixed-layer probing 到 encoder block 的映射为 `block l <- representation L(l+1)`，因此使用 SemEval `L1-L24` 的 fixed-probing major；先做三点移动平均，再用有界指数映射生成层级比例。probing 仅作为“任务相关资源分配先验”，不假定 probing 分数与逐层量化掉点一一对应。
 
@@ -1832,13 +1879,28 @@ fixed-layer probing 到 encoder block 的映射为 `block l <- representation L(
 | low | `0.1% / 0.5%` | `0.6005%` | 动态网格中仍有明显精度缺口，优先观察层级分配是否有效。 |
 | boundary | `0.25% / 1%` | `1.2525%` | 动态网格中刚达到 W8A8 的边界点，验证 probing 是否能以相同负载提高稳定性。 |
 
-对每个预算均运行 `uniform`、`probing`、`inverse`、`early`、`late`、`random_s17`、`random_s29`、`random_s43`。所有策略不是只匹配 24 层 ratio 算术平均，而是按 W4A4/outlier8 的名义 logical BOP：
+对每个预算均运行 8 种层间分配策略，它们只改变 24 个 encoder block 之间的离群值预算形状，最终按相同 BOP 缩放：
+
+| 策略 | 含义 |
+| --- | --- |
+| `uniform` | 24 层使用相同 W/A 离群比例，是每档预算的主基线。 |
+| `probing` | fixed-layer probing 得分先做三点移动平均和指数映射；得分高的层获得更多 W/A 离群预算。 |
+| `inverse` | probing 的方向性反对照；得分高的层少分配，得分低的层多分配，用于判断收益是否仅来自任意非均匀化。 |
+| `early` | 离群比例从前部层到后部层连续递减，优先保护早层。 |
+| `late` | 与 early 相反，离群比例从前部层到后部层连续递增，优先保护晚层。 |
+| `random_s17/s29/s43` | 由随机种子 17/29/43 生成三条随机逐层比例曲线，再归一化并匹配 BOP；这些是分配形状种子，不是 calibration seed。 |
+
+所有策略不是只匹配 24 层 ratio 算术平均，而是按 W4A4/outlier8 的名义 logical BOP：
 
 ```text
 mean_l(w_l + a_l + w_l*a_l) = uniform_budget
 ```
 
 共同缩放 W/A 的逐层比例，使上述预算严格相等；最终比较仍以 `outlier_runtime_stats.json` 的实际 MAC mask、W/A 重叠和 measured BOP 为准。若不同策略实际 BOP 偏差超过预设容差，应按实测值二次缩放重跑，不能直接用当前名义匹配结果下结论。
+
+这里的 `BOP overhead` 是 outlier8 替换路径相对于 W4A4 低比特主路径增加的理论位运算负载，不是模型总 BOP，也不是 PyTorch/GPU wall-clock 加速比。`nominal BOP` 由目标逐层比例计算；`measured BOP` 则根据运行时实际 weight/activation mask、各模块 MAC 数和 W/A 双离群重叠统计，正式比较以后者为准。low 的名义比例为 `W0.1%/A0.5%`，fixed-seed uniform 的 measured BOP 为 `0.5373%`；boundary 的名义比例为 `W0.25%/A1%`，对应 measured BOP 为 `1.1671%`。
+
+“首轮 16 组”来自 `2` 档预算乘 `8` 种策略。首轮只完成名义 BOP 匹配，并为每个策略测出真实 BOP；随后以每档 uniform 的 measured BOP 为目标，对其余 `7` 个非 uniform 策略共同缩放 W/A 逐层比例，因此 BOP 修正批为 `2 * 7 = 14` 组。`bopfix1` 是未固定 calibration seed 的第一次修正，只用于诊断；`bopfix2` 是显式固定 `seed=20260806` 后，基于 fixed-seed 首轮 16 组得到的第二次修正，也是正式结果来源。正式表中的 uniform 来自 fixed-seed 首轮，其余策略来自 fixed-seed `bopfix2`。
 
 首轮 16 组和 `bopfix1` 14 组虽然均完整结束，但检查日志发现 jiant 在未显式传入 `--seed` 时为每个进程随机生成不同 seed。由于 train calibration dataloader 的样本顺序随 seed 变化，各策略使用的 calibration 样本集合不完全一致，构成实验控制变量混杂。该批保留为诊断数据，不能作为论文正式策略对比。
 
@@ -1879,23 +1941,62 @@ BOP_est(s) = s * (weight_outlier_macs + activation_outlier_macs) / total_macs
 
 正式结果判断：
 
-1. **low budget 支持 probing-guided 分配。** probing 为全部 8 个策略最高，较 uniform 高 `0.008939`，且 measured BOP 仅高 `0.0001` 个百分点；也高于三个 random、early、late 和 inverse。
-2. **boundary budget 只提供较弱支持。** probing 较 uniform 高 `0.001599`，但 early 比 probing 还高 `0.001208`；因此不能声称 probing 在所有预算均最优。
+1. **low budget 支持 probing-guided 分配。** probing 为全部 8 个策略最高，较 uniform 高 `0.008939`，且 measured BOP 仅高 `0.0001` 个百分点；也高于三个 random、early、late 和 inverse。一个合理解释是：资源越受限，uniform 越容易把稀缺离群预算分给任务相关性较低的层，任务感知分配的价值因而更明显。
+2. **boundary budget 只提供较弱支持。** probing 较 uniform 高 `0.001599`，但 early 比 probing 还高 `0.001208`。随着预算增加，更多层已获得基本保护，层间分配的边际收益可能减小；同时 SemEval 在该预算下可能由较粗粒度的 early 先验即可覆盖关键区域。因此不能声称 probing 在所有预算均最优，也不能仅凭当前两档预算证明“预算越低，probing 收益必然越大”。
 3. **方向性反对照有效。** inverse 在两档均明显较差，尤其 boundary 比 uniform 低 `0.021894`，说明资源分配方向并非任意非均匀化都等价。
 4. low random 三种子的 major 均值为 `0.845987`、样本标准差为 `0.022253`；boundary random 均值为 `0.865796`、标准差为 `0.006362`。random_s17 波动很大，后续需要固定策略随机种子并增加 calibration seed 重复，不能仅凭单次随机对照估计显著性。
 5. 除 boundary `random_s17` 外，`bopfix2` measured BOP 与 uniform 的绝对误差不超过约 `0.0039` 个百分点；boundary random_s17 仍高 `0.0446` 个百分点，应标记为预算校正未完全收敛，不用于严格同 BOP 排名。
-6. 未固定 seed 时 probing 增益明显更大，固定后收缩为 low `+0.008939`、boundary `+0.001599`，证明 calibration seed 是不可忽略的控制变量。当前结论仍只有一个 calibration seed，下一步应在 low budget 优先补 2-4 个 seed，而不是直接把单次结果写成稳定统计结论。
+6. 未固定 seed 时 probing 增益明显更大，固定后首个 seed 为 low `+0.008939`、boundary `+0.001599`，证明 calibration seed 是不可忽略的控制变量。low budget 已补到四个 calibration seed，结果见下表；boundary 仍只有一个 seed，因此“预算越紧，probing 越有效”仍应写成工作假设，而不是普遍规律。
+
+**low budget 四 calibration seed 复验（2026-08-06）**
+
+新增 seed `20260807/08/09` 均固定 16 个 train calibration batches、每模块最多 65536 个绝对值样本；主批次中每个 seed 先运行 `uniform/probing/inverse/early/random_s29` 五个 nominal-BOP pilot，再以本 seed 的 uniform measured BOP 为锚点重跑四个非 uniform 策略，27/27 完成、0 failed。随后复用各 seed uniform 锚点，补充 late pilot 和 BOP-fix 共 6 个 run，6/6 完成、0 failed。`random_s29` 是首个 fixed-seed low 结果中最强的随机形状，因此这里采用它作为较强随机对照。
+
+| calibration seed | uniform | probing | probing - uniform | inverse | early | late | random_s29 |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `20260806` | 0.857665 | 0.866604 | +0.008939 | 0.851142 | 0.855660 | 0.850786 | 0.861084 |
+| `20260807` | 0.848832 | 0.867738 | +0.018906 | 0.845145 | 0.854018 | 0.842713 | 0.858988 |
+| `20260808` | 0.849963 | 0.868766 | +0.018803 | 0.787879 | 0.850289 | 0.842512 | 0.856438 |
+| `20260809` | 0.850032 | 0.869945 | +0.019913 | 0.847384 | 0.855825 | 0.839229 | 0.861536 |
+
+| 策略 | mean major | sample std | mean paired delta vs uniform | paired-delta std | wins vs uniform | mean measured BOP |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| probing | **0.868263** | 0.001427 | **+0.016640** | 0.005158 | **4/4** | 0.538807% |
+| uniform | 0.851623 | 0.004065 | 0 | 0 | - | 0.538763% |
+| inverse | 0.832888 | 0.030108 | -0.018735 | 0.028946 | 0/4 | 0.538545% |
+| early | 0.853948 | 0.002572 | +0.002325 | 0.003784 | 3/4 | 0.537942% |
+| late | 0.843810 | 0.004917 | -0.007813 | 0.002067 | 0/4 | 0.538446% |
+| random_s29 | 0.859511 | 0.002330 | +0.007888 | 0.003660 | 4/4 | 0.539736% |
+
+四 seed 下 probing 均优于 uniform、early、late、inverse 和 random_s29；相对 random_s29 的 paired 差值为 `+0.008752 ± 0.002790`，相对 early 为 `+0.014315 ± 0.003114`，相对 late 为 `+0.024453 ± 0.006254`。late 在 0/4 seed 中优于 uniform，平均 paired delta 为 `-0.007813 ± 0.002067`，说明后层优先分配在当前 low budget 下稳定不利。同时 random_s29 也在 4/4 seed 中优于 uniform，说明收益不能简单归因于“只有 probing 才能改进 uniform”，但 probing 在相同低预算下稳定优于该强随机形状，支持 fixed probing 提供了额外的任务相关分配信息。各非 uniform 策略相对本 seed uniform 的最大绝对 measured-BOP 误差不超过 `0.00301` 个百分点，远小于 major 差值。
+
+当前证据已经足以把 SemEval low budget 写成较可靠的正面结果，但仍是单任务 validation 和四个 calibration seed；它不证明 probing 在所有任务、所有预算或所有量化方法上普遍最优。下一步应冻结 SemEval 的映射、平滑、指数强度、策略集合和预算，在 NER/DEP 上做迁移验证，避免根据新任务结果反向调规则。
 
 机器可读记录：
 
 ```text
 base_exp/exp_edge/analysis/ptq/semeval_w4a4_probe_guided_outlier8_allocations.json
+base_exp/exp_edge/analysis/ptq/semeval_w4a4_probe_guided_outlier8_bopfix1_allocations.json
+base_exp/exp_edge/analysis/ptq/semeval_w4a4_probe_guided_outlier8_bopfix2_fixedseed_allocations.json
 base_exp/exp_edge/local_logs/semeval_w4a4_probe_guided_out8_20260806_003619/status.tsv
 base_exp/exp_edge/local_logs/semeval_w4a4_probe_guided_out8_bopfix1_20260806_bopfix1/status.tsv
 base_exp/exp_edge/local_logs/semeval_w4a4_probe_guided_out8_fixedseed_20260806_fixedseed1/status.tsv
 base_exp/exp_edge/local_logs/semeval_w4a4_probe_guided_out8_bopfix2_fixedseed_20260806_bopfix2_fixedseed1/status.tsv
 base_exp/exp_edge/analysis/ptq/semeval_w4a4_probe_guided_outlier8_unfixedseed_bopfix1_20260806.tsv
 base_exp/exp_edge/analysis/ptq/semeval_w4a4_probe_guided_outlier8_fixedseed_bopfix2_20260806.tsv
+base_exp/exp_edge/analysis/ptq/semeval_w4a4_probe_guided_outlier8_low_multiseed_allocations.json
+base_exp/exp_edge/analysis/ptq/semeval_w4a4_probe_guided_outlier8_low_bopfix2_fixedseed20260807_allocations.json
+base_exp/exp_edge/analysis/ptq/semeval_w4a4_probe_guided_outlier8_low_bopfix2_fixedseed20260808_allocations.json
+base_exp/exp_edge/analysis/ptq/semeval_w4a4_probe_guided_outlier8_low_bopfix2_fixedseed20260809_allocations.json
+base_exp/exp_edge/local_logs/semeval_w4a4_probe_guided_out8_low_multiseed_20260807_low_multiseed2/status.tsv
+base_exp/exp_edge/analysis/ptq/semeval_w4a4_probe_guided_outlier8_low_late_multiseed_allocations.json
+base_exp/exp_edge/analysis/ptq/semeval_w4a4_probe_guided_outlier8_low_late_bopfix2_fixedseed20260807_allocations.json
+base_exp/exp_edge/analysis/ptq/semeval_w4a4_probe_guided_outlier8_low_late_bopfix2_fixedseed20260808_allocations.json
+base_exp/exp_edge/analysis/ptq/semeval_w4a4_probe_guided_outlier8_low_late_bopfix2_fixedseed20260809_allocations.json
+base_exp/exp_edge/local_logs/semeval_w4a4_probe_guided_out8_late_multiseed_20260806_late_multiseed1/status.tsv
+base_exp/exp_edge/analysis/ptq/semeval_w4a4_probe_guided_outlier8_low_multiseed_20260806_09.runs.tsv
+base_exp/exp_edge/analysis/ptq/semeval_w4a4_probe_guided_outlier8_low_multiseed_20260806_09.summary.tsv
+base_exp/exp_edge/analysis/ptq/semeval_w4a4_probe_guided_outlier8_low_multiseed_20260806_09.json
 base_exp/exp_edge/analysis/ptq/probe_guided_outlier8_runs_20260806/manifest.tsv
 ```
 
@@ -1912,6 +2013,9 @@ run_semeval_w4a4_probe_guided_outlier8_bopfix_local.sh
 run_semeval_outlier_ptq_one_fixedseed_local.sh
 run_semeval_w4a4_probe_guided_outlier8_fixedseed_local.sh
 run_semeval_w4a4_probe_guided_outlier8_bopfix2_fixedseed_local.sh
+run_semeval_w4a4_probe_guided_outlier8_low_multiseed_local.sh
+run_semeval_w4a4_probe_guided_outlier8_late_multiseed_local.sh
+tools/summarize_probe_guided_multiseed.py
 ```
 
 新增/修改实现与运行入口：
@@ -1932,10 +2036,326 @@ summarize_w4a4_dual_outlier8_grid.py
 
 1. 不再继续扩大统一比例网格；outlier8/outlier16 各 30 组完整网格已经给出成本-精度边界，outlier8 暂定为主候选。
 2. 固定 activation calibration、固定 seed 和 measured-BOP 二次匹配均已实现；SemEval low budget 的 probing 为当前最强正面结果，boundary 则由 early 略高于 probing。
-3. 下一步先在 low budget 对 uniform/probing/early/inverse 和必要的 random 对照补 `2-4` 个 calibration seeds，并增加 cost/reconstruction-only 对照；只有 probing 的均值和方差仍占优时，才冻结规则并验证 NER、DEP。
-4. 方法规则在 SemEval 冻结后，再迁移到 NER 与 DEP；避免用三任务测试结果反向调规则。
+3. SemEval low budget 已完成四 calibration seed 的 paired-BOP 复验，probing 在 4/4 seed 中优于 uniform、early、late、inverse 和 random_s29；NER 也已完成独立预算筛选和四 seed 六策略验证，但由 late 而不是 probing 最优，结果见下一小节。
+4. 方法规则已迁移到 DEP。DEP 独立筛选出 `floor50` low=`W0.055%/A0.275%`、boundary=`W0.070%/A0.350%`，并完成单 seed 六策略与四 seed paired uniform/probing 验证，结果见 2026-08-09 小节。避免用三任务 validation/test 结果反向调整 probing 映射、指数强度或预算。
 5. QAT 仍只作为 PTQ 后续可选增强，不是当前下一步。
 
+
+#### 2026-08-07 更新：NER outlier8 预算筛选与 probing-guided 四 seed 结果
+
+本节统一使用 NER checkpoint `formal_e3_ms256_tner` 和完整 validation。NER 的主指标不是单独的准确率，而是：
+
+```text
+major = acc_and_f1_micro = (acc + f1_micro) / 2
+```
+
+因此下表全部同时报告 `major` 和 `f1_micro`。当 `f1_micro=0` 时，即使 token `acc` 很高，也表示模型退化为多数类预测，不能把 `major≈0.47` 解释为保留了约一半有效性能。当前 NER 目录中的 142 个 `quant_summary.json` 已全部归入以下五类：7 个 uniform PTQ、30 个动态阈值 W4A4 网格、9 个固定校准超低预算点、8 个 INT2 点、88 个 probing 六策略 pilot/BOP-fix run；没有未归类的 NER PTQ 结果。
+
+**结果与作业状态审计**：上述 `142` 个是唯一有效结果，不代表所有历史尝试都一次成功。`20260807_int2_screen1` 中的 `w2a4_uniform` 和 `w4a2_uniform` 最初均失败，报错为 `RuntimeError: Activation calibration requested but no A-outlier modules exist`：uniform 配置没有 A-outlier 模块，但旧脚本仍进入 activation calibration。两项随后由 `20260807_int2_uniform_repair1` 修复并 2/2 完成；下文 INT2 表使用 repair 后的有效指标，原失败尝试没有指标，不能算作额外实验点。动态阈值网格状态表中的 `skipped_existing` 是分批续跑时检测到相同 `RUN_NAME` 已有完整结果后复用，包含重复调度记录，不表示配置漏跑或失败。负面算法结果（W6A8/W8A6/W4A4 退化、极低预算塌缩、INT2 未恢复、inverse/early 退化、random 不稳定以及 late 优于 probing）均在下表和结论中保留。
+
+**1. Baseline 与 uniform PTQ**
+
+完整 7 点结果已列在“2026-08-01 更新：NER/DEP uniform PTQ”小节。关键锚点如下：
+
+| 配置 | major | f1_micro | 判断 |
+| --- | ---: | ---: | --- |
+| FP32 baseline | 0.978696 | 0.961635 | `formal_e3_ms256_tner` |
+| W8A8 uniform | 0.973531 | 0.952258 | 唯一基本可用的 naive uniform PTQ |
+| W6A8 uniform | 0.109320 | 0.105029 | 严重崩溃 |
+| W8A6 uniform | 0.597837 | 0.244261 | 实体 F1 大幅下降 |
+| W4A4 uniform | 0.472222 | 0.000000 | 多数类塌缩，不可用 |
+
+**2. W4A4 + 双侧 outlier8 动态阈值 30 点网格**
+
+该批沿 validation batch 内动态 sampled quantile 选择 activation outlier，只用于预算粗筛。它利用当前 validation 激活自适应阈值，通常比部署时固定 train calibration 更有利，不能与后面的 fixed-calibration low/boundary 正式结果直接排名。
+
+| W target | A target | major | f1_micro | measured BOP overhead |
+| ---: | ---: | ---: | ---: | ---: |
+| 0.1% | 0.5% | 0.976459 | 0.957556 | 0.8508% |
+| 0.1% | 1% | 0.977496 | 0.959465 | 1.4499% |
+| 0.1% | 2% | 0.977403 | 0.959293 | 2.6357% |
+| 0.1% | 4% | 0.977799 | 0.960011 | 4.6364% |
+| 0.1% | 6% | 0.977787 | 0.959982 | 6.0802% |
+| 0.25% | 0.5% | 0.976438 | 0.957530 | 1.0894% |
+| 0.25% | 1% | 0.977695 | 0.959818 | 1.7211% |
+| 0.25% | 2% | 0.977105 | 0.958763 | 2.8415% |
+| 0.25% | 4% | 0.977719 | 0.959865 | 5.1864% |
+| 0.25% | 6% | 0.977103 | 0.958754 | 6.8411% |
+| 0.5% | 0.5% | 0.976722 | 0.958037 | 1.3463% |
+| 0.5% | 1% | 0.977436 | 0.959356 | 2.1011% |
+| 0.5% | 2% | 0.977385 | 0.959274 | 3.2608% |
+| 0.5% | 4% | 0.977290 | 0.959098 | 5.5360% |
+| 0.5% | 6% | 0.977309 | 0.959131 | 7.2802% |
+| 1% | 0.5% | 0.977498 | 0.959443 | 1.8506% |
+| 1% | 1% | 0.978134 | 0.960615 | 2.4146% |
+| 1% | 2% | 0.977260 | 0.959044 | 3.6253% |
+| 1% | 4% | 0.978053 | 0.960469 | 5.4629% |
+| 1% | 6% | 0.977812 | 0.960036 | 7.5856% |
+| 2% | 0.5% | 0.977779 | 0.959982 | 2.7226% |
+| 2% | 1% | 0.977860 | 0.960127 | 3.4111% |
+| 2% | 2% | 0.977652 | 0.959753 | 4.6580% |
+| 2% | 4% | 0.977860 | 0.960127 | 6.8750% |
+| 2% | 6% | 0.977997 | 0.960371 | 8.1597% |
+| 4% | 0.5% | 0.978628 | 0.961509 | 4.9026% |
+| 4% | 1% | 0.978565 | 0.961393 | 5.4249% |
+| 4% | 2% | 0.978295 | 0.960912 | 6.2948% |
+| 4% | 4% | 0.978183 | 0.960709 | 8.6787% |
+| 4% | 6% | **0.978687** | **0.961612** | 10.8109% |
+
+最低预算点 `W0.1%/A0.5%` 已达到 `major=0.976459, f1_micro=0.957556`，所以这组动态阈值网格无法为正式策略对比提供足够困难的 low budget。最高点 `W4%/A6%` 与 FP32 baseline 几乎相同，但增加了 `10.8109%` measured BOP；这只能说明双侧保护可以恢复 W4A4，不能说明如此高预算具有成本优势。
+
+机器可读汇总：
+
+```text
+base_exp/exp_edge/analysis/ptq/ner_w4a4_dual_outlier8_grid_20260806.tsv
+```
+
+**3. 固定 train calibration 的 9 点超低预算扫描**
+
+该批固定 `seed=20260806`，使用 16 个 train calibration batch、每个 linear module 最多 65536 个激活样本，并在完整 validation 中冻结 144 个模块阈值。比例由 W/A=`1:5` 的主方向逐步扫描，再补 3 个局部点。
+
+| W target | A target | major | f1_micro | measured BOP overhead | 用途 |
+| ---: | ---: | ---: | ---: | ---: | --- |
+| 0.003125% | 0.015625% | 0.470024 | 0.066817 | 0.1592% | 近似塌缩 |
+| 0.00625% | 0.03125% | 0.545735 | 0.142773 | 0.1830% | 严重退化 |
+| 0.0125% | 0.0625% | 0.849519 | 0.723282 | 0.2327% | 开始恢复 |
+| 0.025% | 0.125% | 0.918195 | 0.850943 | 0.3371% | 转折区低端 |
+| 0.03125% | 0.15625% | 0.962386 | 0.931982 | 0.3916% | **low budget** |
+| 0.0375% | 0.1875% | 0.969633 | 0.945170 | 0.4383% | 局部中点 |
+| 0.04375% | 0.21875% | 0.972775 | 0.950877 | 0.4865% | **boundary budget** |
+| 0.05% | 0.25% | 0.973891 | 0.952908 | 0.5355% | 略高于 W8A8 major |
+| 0.1% | 0.5% | 0.976876 | 0.958316 | 0.8977% | 接近 FP32 |
+
+NER 的性能转折集中在约 `0.23%-0.49%` measured BOP overhead。low 点仍比 W8A8 低 `0.011145 major / 0.020276 F1`，有明显恢复空间；boundary 点已接近 W8A8（低 `0.000756 major / 0.001381 F1`），适合检验高预算下层间分配收益是否缩小。NER 的预算因此必须独立筛选，不能直接沿用 SemEval 的 `W0.1%/A0.5%` low budget。
+
+**4. W2A4/W4A2 + 双侧 outlier8 INT2 压力测试**
+
+| 主路径 | W/A target | major | f1_micro | measured BOP overhead |
+| --- | ---: | ---: | ---: | ---: |
+| W2A4 uniform | 0% / 0% | 0.472222 | 0.000000 | 0% |
+| W2A4 + outlier8 | 0.5% / 1% | 0.469959 | 0.092607 | 4.4717% |
+| W2A4 + outlier8 | 1% / 2% | 0.472302 | 0.016486 | 8.2713% |
+| W2A4 + outlier8 | 2% / 4% | 0.433233 | 0.079606 | 15.0456% |
+| W4A2 uniform | 0% / 0% | 0.472222 | 0.000000 | 0% |
+| W4A2 + outlier8 | 0.25% / 2% | 0.472555 | 0.000722 | 5.1695% |
+| W4A2 + outlier8 | 0.5% / 4% | 0.841282 | 0.708072 | 11.1354% |
+| W4A2 + outlier8 | 1% / 6% | **0.932899** | **0.878107** | 18.6231% |
+
+W2A4 在所测比例内完全不可用；W4A2 随 activation 保护增加而恢复，但最佳点仍低于 W8A8 `0.040632 major / 0.074151 F1`，同时额外 BOP 已达 `18.6231%`。因此 INT2 只作为压力测试，不进入当前论文主方法。
+
+**5. low/boundary 六策略、四 calibration seed 正式比较**
+
+每个 seed 对 low 和 boundary 分别运行六种策略：`uniform/probing/inverse/early/late/random_s29`。每档的 uniform 来自固定 seed pilot，其余策略使用该 seed 的 uniform measured BOP 作目标进行 BOP-fix；四 seed 共 88 个 pilot/BOP-fix run，正式汇总取其中 48 个同口径结果。
+
+| 预算 | 策略 | mean major ± std | mean f1_micro ± std | Δmajor vs uniform | ΔF1 vs uniform | wins vs uniform | mean BOP overhead |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| low | uniform | 0.947047 ± 0.021864 | 0.903878 ± 0.040129 | 0 | 0 | - | 0.3916% |
+| low | probing | 0.964919 ± 0.004782 | 0.936601 ± 0.008703 | **+0.017872** | **+0.032723** | **4/4** | 0.3779% |
+| low | inverse | 0.813165 ± 0.065396 | 0.654504 ± 0.123648 | -0.133882 | -0.249374 | 0/4 | 0.4006% |
+| low | early | 0.866304 ± 0.020477 | 0.754624 ± 0.038241 | -0.080742 | -0.149253 | 0/4 | 0.4029% |
+| low | late | **0.970480 ± 0.004893** | **0.946712 ± 0.008897** | **+0.023434** | **+0.042834** | **4/4** | 0.3793% |
+| low | random_s29 | 0.935886 ± 0.009986 | 0.883492 ± 0.018347 | -0.011160 | -0.020386 | 1/4 | 0.3780% |
+| boundary | uniform | 0.964895 ± 0.005303 | 0.936541 ± 0.009647 | 0 | 0 | - | 0.4854% |
+| boundary | probing | 0.968427 ± 0.005416 | 0.942972 ± 0.009847 | **+0.003533** | **+0.006431** | **4/4** | 0.4766% |
+| boundary | inverse | 0.882355 ± 0.018554 | 0.784512 ± 0.034521 | -0.082539 | -0.152028 | 0/4 | 0.4942% |
+| boundary | early | 0.916914 ± 0.026117 | 0.848488 ± 0.048160 | -0.047981 | -0.088052 | 0/4 | 0.4977% |
+| boundary | late | **0.974758 ± 0.000694** | **0.954488 ± 0.001254** | **+0.009863** | **+0.017947** | **4/4** | 0.4714% |
+| boundary | random_s29 | 0.967211 ± 0.005163 | 0.940766 ± 0.009394 | +0.002317 | +0.004226 | 2/4 | 0.4788% |
+
+BOP-fix 后各非 uniform 策略相对本 seed uniform 的最大绝对 measured-BOP 残差不超过约 `0.0162` 个百分点。probing 和 late 的四 seed 平均 BOP 均略低于 uniform，因此它们相对 uniform 的指标增益不能解释为使用了更多计算负载；但 probing 与 late 之间仍应按实测 BOP 与指标共同判断，不能只比较名义比例。
+
+逐 seed 的 probing/uniform 差值如下，major 与 F1 的方向完全一致：
+
+| seed | low Δmajor | low ΔF1 | boundary Δmajor | boundary ΔF1 |
+| ---: | ---: | ---: | ---: | ---: |
+| 20260806 | +0.009469 | +0.017241 | +0.001711 | +0.003106 |
+| 20260807 | +0.046193 | +0.084770 | +0.008266 | +0.015047 |
+| 20260808 | +0.005523 | +0.010078 | +0.001417 | +0.002582 |
+| 20260809 | +0.010304 | +0.018805 | +0.002736 | +0.004991 |
+
+结论必须分两层表达：
+
+1. **NER 支持 probing 比 uniform 更有效。** probing 在 low 和 boundary 都是 4/4 seed 同时提高 major 与 F1，inverse/early 明显更差，说明层间预算方向不是任意非均匀分配都等价。
+2. **NER 不支持 probing 是全局最佳策略。** late 的四 seed 平均值在两档预算都高于 probing；low 仅 seed `20260809` 的 probing 高于 late。boundary 按 major 为 late 3/4 更高，seed `20260806` 中 probing 仅高约 `0.000003`、可视为数值并列；按 f1_micro 则 late 4/4 更高。NER fixed-probing 曲线本身在中后层较高，因此 probing 与单调 late 都会增加后层保护，但 late 更集中，当前结果说明 NER 更偏好强后层保护。
+3. **预算效应仍存在。** probing 相对 uniform 的 mean major 增益从 low 的 `+0.017872` 降到 boundary 的 `+0.003533`，F1 增益从 `+0.032723` 降到 `+0.006431`；但 late 仍然很强，所以不能把该现象写成 probing 独有规律。
+4. **跨任务结论应保持克制。** SemEval low budget 中 probing 优于 late，NER 中 late 优于 probing；这恰好说明 fixed probing 的价值需要通过三任务验证，而不能预设同一种分配形状对所有任务最优。
+
+机器可读结果：
+
+```text
+base_exp/exp_edge/analysis/ptq/ner_w4a4_probe_guided_outlier8_low_boundary_fixedseed20260806.tsv
+base_exp/exp_edge/analysis/ptq/ner_w4a4_probe_guided_outlier8_low_boundary_fixedseed20260807.tsv
+base_exp/exp_edge/analysis/ptq/ner_w4a4_probe_guided_outlier8_low_boundary_fixedseed20260808.tsv
+base_exp/exp_edge/analysis/ptq/ner_w4a4_probe_guided_outlier8_low_boundary_fixedseed20260809.tsv
+base_exp/exp_edge/analysis/ptq/ner_w4a4_probe_guided_outlier8_low_boundary_multiseed_20260806_09.summary.tsv
+base_exp/exp_edge/analysis/ptq/ner_w4a4_probe_guided_outlier8_low_boundary_multiseed_20260806_09.pairwise.tsv
+```
+
+#### 2026-08-09 更新：DEP outlier8 预算筛选、floor 消融与 probing-guided 四 seed 结果
+
+本节统一使用 DEP checkpoint `formal_e3_ms256_retry1`、W4A4 主路径、双侧 outlier8、16 个 train calibration batch、每模块最多 65536 个 activation calibration 值和完整 validation。固定 seed 为 `20260806-20260809`。DEP 同样必须同时报告：
+
+```text
+major = acc_and_f1_micro = (acc + f1_micro) / 2
+```
+
+**1. Baseline 与统一比例预算扫描**
+
+| 配置 | major | f1_micro | 判断 |
+| --- | ---: | ---: | --- |
+| FP32 baseline | 0.978290 | 0.958064 | `formal_e3_ms256_retry1` |
+| W8A8 uniform PTQ | 0.932261 | 0.868740 | 可运行，但相对 FP32 掉点明显 |
+| W4A4 uniform PTQ | 0.491071 | 0.000000 | 多数类塌缩，不可用 |
+
+固定 `seed=20260806` 的 W4A4+双侧 outlier8 统一比例扫描如下。比例是 nominal W/A target；BOP 是根据运行时实际 outlier mask 统计的 measured logical overhead。
+
+| W target | A target | major | f1_micro | measured BOP overhead |
+| ---: | ---: | ---: | ---: | ---: |
+| 0.003125% | 0.015625% | 0.394116 | 0.032316 | 0.0750% |
+| 0.00625% | 0.03125% | 0.412272 | 0.031569 | 0.1867% |
+| 0.0125% | 0.0625% | 0.444973 | 0.031043 | 0.3084% |
+| 0.025% | 0.125% | 0.412103 | 0.032899 | 0.4890% |
+| 0.050% | 0.250% | 0.924510 | 0.853669 | 0.3007% |
+| 0.055% | 0.275% | 0.948695 | 0.900692 | 0.3244% |
+| 0.060% | 0.300% | 0.955017 | 0.912965 | 0.3542% |
+| 0.065% | 0.325% | 0.962385 | 0.927259 | 0.3888% |
+| 0.070% | 0.350% | 0.967741 | 0.937640 | 0.4166% |
+| 0.080% | 0.400% | 0.974162 | 0.950069 | 0.4817% |
+| 0.090% | 0.450% | 0.974827 | 0.951357 | 0.5390% |
+| 0.100% | 0.500% | 0.974684 | 0.951083 | 0.5966% |
+
+极低 nominal ratio 下 measured BOP 和精度都不严格单调。例如 `.025/.125` 的 measured BOP 反而高于 `.05/.25`，说明 calibration quantile、离散阈值和大量相同值会使实际激活离群比例发生跳变。正式算法比较必须使用 measured BOP，而不能只比较 nominal W/A 比例。DEP 的清晰恢复区间位于 `.05/.25` 到 `.08/.40` 左右。
+
+**2. 无 floor 的 probing 诊断：超低预算不稳定**
+
+第一轮曾直接在 low=`W0.05%/A0.25%` 使用 raw probing shape，并做四 seed 六策略/BOP-fix。probing 在 4/4 seed 都严重塌缩：
+
+| seed | uniform major / F1 | raw probing major / F1 | probing measured BOP |
+| ---: | ---: | ---: | ---: |
+| 20260806 | 0.924510 / 0.853669 | 0.490415 / 0.021745 | 0.3737% |
+| 20260807 | 0.885705 / 0.777989 | 0.444020 / 0.029962 | 0.3666% |
+| 20260808 | 0.892147 / 0.790569 | 0.397774 / 0.030758 | 0.7909% |
+| 20260809 | 0.901662 / 0.809159 | 0.485398 / 0.023648 | 0.4576% |
+
+这批负结果不是 probing 的正向证据，而是说明：仅按 probing shape 分配会让低分层得到接近零的离群保护；DEP 在极低预算下对这种“层级断供”非常敏感。随后固定 `seed=20260806` 补做 6 个 `floor=0` probing 点：
+
+| nominal W/A | major | f1_micro | measured BOP overhead |
+| ---: | ---: | ---: | ---: |
+| .055% / .275% | 0.557818 | 0.132899 | 0.4224% |
+| .060% / .300% | 0.916317 | 0.837770 | 0.3021% |
+| .065% / .325% | 0.933692 | 0.871553 | 0.3194% |
+| .070% / .350% | 0.953780 | 0.910569 | 0.3451% |
+| .080% / .400% | 0.965644 | 0.933576 | 0.4079% |
+| .090% / .450% | 0.972508 | 0.946875 | 0.4882% |
+
+raw probing 随预算升高逐步恢复，到 `.09/.45` 才接近同点 uniform；`.055/.275` 则再次严重塌缩。因此第一版方法不能使用 `floor=0`。
+
+**3. floor50 定位与 low/boundary 选择**
+
+`floor50` 不是“50% 数值作为离群值”，而是每层先获得该档 uniform layer ratio 的 50% 作为最低保护，再把剩余预算按 probing shape 分配。它保留 probing 的层间差异，同时避免任何层保护比例过低。
+
+| nominal W/A | floor50 probing major | f1_micro | measured BOP overhead | 同 nominal uniform major / F1 |
+| ---: | ---: | ---: | ---: | ---: |
+| .055% / .275% | 0.938425 | 0.880744 | 0.2997% | 0.948695 / 0.900692 |
+| .065% / .325% | 0.958237 | 0.919217 | 0.3527% | 0.962385 / 0.927259 |
+| .070% / .350% | 0.963466 | 0.929354 | 0.3821% | 0.967741 / 0.937640 |
+| .080% / .400% | 0.973112 | 0.948043 | 0.4523% | 0.974162 / 0.950069 |
+
+同 nominal W/A 下 floor50 probing 略低于 uniform，但 measured BOP 也更低，因此不能只按 nominal ratio 比精度。按相近实际开销比较：
+
+- floor50 `.055/.275`（BOP `0.2997%`）相对 uniform `.05/.25`（BOP `0.3007%`）为 `major +0.013915`、`F1 +0.027075`。
+- floor50 `.070/.350`（BOP `0.3821%`）相对 uniform `.065/.325`（BOP `0.3888%`）为 `major +0.001081`、`F1 +0.002095`。
+
+据此冻结：
+
+```text
+low      = floor50 W0.055% / A0.275%，目标 measured BOP 约 0.30%-0.32%
+boundary = floor50 W0.070% / A0.350%，目标 measured BOP 约 0.38%-0.42%
+```
+
+两点的单 seed floor50 精度均高于旧 W8A8，但预算选择依据是 W4A4+outlier8 精度-开销曲线，不是“是否超过 W8A8”。W4A4+outlier8 高于 uniform W8A8 也不表示 INT8 保护有害：前者把离群值与主体范围分开量化，主体 W4 的有效分辨率可能优于被全张量极值拉宽 scale 的普通 W8。
+
+**4. seed=20260806 六策略 pilot 与 BOP-fix2**
+
+同 nominal 预算的 pilot 如下：
+
+| 预算 | 策略 | major | f1_micro | measured BOP overhead |
+| --- | --- | ---: | ---: | ---: |
+| low | uniform | 0.948695 | 0.900692 | 0.3244% |
+| low | probing | 0.938425 | 0.880744 | 0.2997% |
+| low | inverse | 0.883295 | 0.773269 | 0.3905% |
+| low | early | 0.834421 | 0.677600 | 0.3107% |
+| low | late | 0.783575 | 0.578356 | 0.4143% |
+| low | random_s29 | 0.807762 | 0.625347 | 0.3952% |
+| boundary | uniform | 0.967741 | 0.937640 | 0.4166% |
+| boundary | probing | 0.963466 | 0.929354 | 0.3821% |
+| boundary | inverse | 0.952188 | 0.907464 | 0.4645% |
+| boundary | early | 0.949148 | 0.901549 | 0.4033% |
+| boundary | late | 0.961642 | 0.925841 | 0.4624% |
+| boundary | random_s29 | 0.960615 | 0.923822 | 0.4039% |
+
+probing 在两档都是精度最高且 BOP 最低的非 uniform 策略，严格支配 inverse/early/late/random；uniform 精度更高但开销也更高。随后以每档 uniform measured BOP 为目标进行一次 BOP-fix2：low probing 放大 `1.082110` 倍，boundary probing 放大 `1.090156` 倍。
+
+| 预算 | 策略 | major | f1_micro | measured BOP overhead |
+| --- | --- | ---: | ---: | ---: |
+| low | uniform | 0.948695 | 0.900692 | 0.3244% |
+| low | **probing bopfix2** | **0.951779** | **0.906685** | 0.3294% |
+| low | inverse bopfix2 | 0.428291 | 0.033591 | 0.4218% |
+| low | early bopfix2 | 0.868529 | 0.744392 | 0.3230% |
+| low | late bopfix2 | 0.489068 | 0.038857 | 0.8502% |
+| low | random_s29 bopfix2 | 0.452331 | 0.029833 | 0.6535% |
+| boundary | uniform | 0.967741 | 0.937640 | 0.4166% |
+| boundary | **probing bopfix2** | **0.972301** | **0.946470** | 0.4231% |
+| boundary | inverse bopfix2 | 0.940172 | 0.884122 | 0.4301% |
+| boundary | early bopfix2 | 0.954545 | 0.912030 | 0.4195% |
+| boundary | late bopfix2 | 0.954094 | 0.911211 | 0.4216% |
+| boundary | random_s29 bopfix2 | 0.962716 | 0.927890 | 0.4157% |
+
+probing 在 low/boundary 分别取得 `major +0.003084/+0.004560`、`F1 +0.005992/+0.008830`，BOP 相对 uniform 高约 `1.5%`。low 的 inverse/late/random 在缩小 nominal ratio 后出现实际 BOP 跳升和 F1 塌缩，说明一次线性/二次 MAC 外推不能处理极低 quantile 的离散阈值跳变；这些点不能冒充成功的等 BOP 对照。boundary 的 BOP-fix 较稳定，probing 仍为最优非 uniform 策略。
+
+**5. floor50 paired uniform/probing 四 seed 正式结果**
+
+正式 paired 结果中，每个 seed 重新运行 uniform/probing pilot，再以该 seed、该预算的 uniform measured BOP 为目标生成 probing BOP-fix2。`20260806` 复用上一小节结果，`20260807/08/09` 各新增 4 个 pilot + 2 个 probing BOP-fix，共 18/18 完成、0 failed。
+
+| 预算 | 策略 | mean major ± std | mean f1_micro ± std | mean Δmajor | mean ΔF1 | wins vs uniform | mean BOP overhead |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| low | uniform | 0.936152 ± 0.009578 | 0.876308 ± 0.018629 | 0 | 0 | - | 0.3286% |
+| low | **probing bopfix2** | **0.951403 ± 0.000427** | **0.905954 ± 0.000828** | **+0.015251** | **+0.029646** | **4/4** | 0.3320% |
+| boundary | uniform | 0.968081 ± 0.000714 | 0.938295 ± 0.001380 | 0 | 0 | - | 0.4174% |
+| boundary | **probing bopfix2** | **0.970904 ± 0.001679** | **0.943765 ± 0.003251** | **+0.002823** | **+0.005470** | **4/4** | 0.4206% |
+
+上表 std 为四 seed 的 population std。逐 seed paired delta 和 BOP 残差如下；BOP error 的单位是百分点，即 probing overhead 减 uniform overhead：
+
+| seed | low Δmajor | low ΔF1 | low BOP error | boundary Δmajor | boundary ΔF1 | boundary BOP error |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 20260806 | +0.003084 | +0.005992 | +0.004945 pp | +0.004560 | +0.008830 | +0.006554 pp |
+| 20260807 | +0.030141 | +0.058613 | +0.003112 pp | +0.000702 | +0.001368 | +0.003795 pp |
+| 20260808 | +0.013812 | +0.026841 | +0.000264 pp | +0.000855 | +0.001659 | -0.001268 pp |
+| 20260809 | +0.013967 | +0.027137 | +0.005208 pp | +0.005173 | +0.010022 | +0.003612 pp |
+
+四 seed 结论：
+
+1. **DEP 支持 floor50 probing 比 uniform 更有效。** low 和 boundary 都是 4/4 seed 同时提高 major 与 F1，方向一致；low mean major/F1 增益为 `+0.015251/+0.029646`，boundary 为 `+0.002823/+0.005470`。
+2. **资源越受限，probing 的收益越明显。** low 的平均增益约为 boundary 的 5 倍，和 SemEval/NER 中“低预算更容易拉开层间分配差距”的观察一致；但这仍是经验规律，不是理论保证。
+3. **BOP 匹配接近但并非完全相等。** low/boundary mean BOP error 分别为 `+0.003382/+0.003173` 个百分点，最大绝对误差分别为 `0.005208/0.006554` 个百分点。probing 平均开销略高约 1%，所以论文应写“近似同 measured BOP 下优于 uniform”，并同时报告每个点的实测开销。
+4. **floor 是方法必要组成，而不是事后美化。** 同任务、同主路径下，旧 raw probing 在 `.05/.25` 的 4/4 seed 和 `.055/.275` 单点均塌缩；floor50 后 probing 才稳定恢复。方法应正式定义为“逐层最低保护 + probing 分配剩余预算 + measured-BOP 约束”。
+5. **当前已提交其他策略的多 seed 补全，但完成前不能外推。** `20260806` 六策略 pilot/BOP-fix 中 probing 最强；`20260807/08/09` 的 inverse/early/late/random 两档 pilot+BOP-fix2 已由 `20260809_dep_floor50_remaining3seeds1` 提交，计划新增 48 个运行。作业完成并按 measured BOP 审计前，仍只能声称四 seed probing 优于 uniform，不能声称 probing 在 DEP 多 seed 下优于 late/random 等策略。
+6. **样本量仍有限。** 4/4 同向是较强的重复性信号，但只有四个 calibration seed、单一 DEP checkpoint 和 validation split；最终结论应与 SemEval、NER 一起呈现，不单独宣称普适最优。
+
+机器可读结果与关键状态表：
+
+```text
+base_exp/exp_edge/analysis/ptq/dep_w4a4_probe_guided_outlier8_low_fixedseed20260806.tsv
+base_exp/exp_edge/analysis/ptq/dep_w4a4_probe_guided_outlier8_low_fixedseed20260807.tsv
+base_exp/exp_edge/analysis/ptq/dep_w4a4_probe_guided_outlier8_low_fixedseed20260808.tsv
+base_exp/exp_edge/analysis/ptq/dep_w4a4_probe_guided_outlier8_low_fixedseed20260809.tsv
+base_exp/exp_edge/analysis/ptq/dep_w4a4_floor50_low_boundary_multiseed_20260806_09.tsv
+base_exp/exp_edge/analysis/ptq/dep_w4a4_floor50_low_boundary_multiseed_20260806_09.json
+base_exp/exp_edge/local_logs/dep_w4a4_raw_probing_six_budget_scan_20260808_dep_raw_probe_six1/status.tsv
+base_exp/exp_edge/local_logs/dep_w4a4_floor50_low_boundary_six_strategy_20260808_dep_floor50_lb_seed1/status.tsv
+base_exp/exp_edge/local_logs/dep_w4a4_floor50_low_boundary_bopfix2_20260808_dep_floor50_bopfix2_seed1/status.tsv
+base_exp/exp_edge/local_logs/dep_w4a4_floor50_low_boundary_paired_multiseed_20260809_dep_floor50_paired3seeds1/status.tsv
+```
 
 ### 参考论文调研提炼
 
@@ -2354,8 +2774,8 @@ git push git@github.com:ZzX1ng/graduate.git main:main
 6. 下一阶段应先筛选非线性候选方法：优先考虑 LUT-GELU / quantized LUT-GELU / 分段二次，先在 `SPR2`、`SemEval` 做 uniform 档位，再设计同平均表项数的 layer-wise / early / late / random 对照。
 7. 同步筛选线性候选方法：优先考虑 layer-wise mixed precision quantization / outlier-aware quantization / FFN low-rank / 结构化剪枝；不建议把深度可分离卷积替代 BERT dense 层作为当前主线。
 8. 硬件设计应放在方法筛选之后展开：线性部分对应多精度 GEMM/PE 阵列和缓存数据流，非线性部分对应 LUT/PWL/PWQ 或 Softmax/LayerNorm 近似单元；论文需要同时报告任务指标和理论 MAC、存储、DSP/LUT/BRAM 资源变化。
-9. 量化当前状态：SemEval uniform、W6/A6 单侧恢复、W4/A4 隔离，以及 W4A4 双侧 outlier16/outlier8 两套 30 组网格均已完成。outlier8 最低成本达到 W8A8 的点为 `W0.25/A1`（1.21% overhead），最高点为 `W0.1/A4`（`major=0.882202`，4.08% overhead），当前 Pareto 边界优于 outlier16。下一步不再扩大 uniform ratio sweep。
-10. 量化下一步：将动态 activation quantile 改为 calibration set 固定逐模块阈值，以 outlier8 `W0.25/A1`、`W0.5/A2`、`W0.1/A4` 为主、outlier16 `W2/A4` 为对照复验，再建立逐层候选表并开展 probing-guided 同 BOP 预算分配；规则在 SemEval 冻结后验证 NER、DEP。
+9. 量化当前状态：SemEval 的双侧 outlier16/outlier8 网格与四 seed probing 比较均已完成；NER 的 142 个 PTQ 结果也已全部归档，包括 30 点动态阈值网格、9 点固定校准预算扫描、8 点 INT2 压力测试及 88 个 probing pilot/BOP-fix run。NER probing 在 low/boundary 都是 4/4 seed 优于 uniform，mean major 增益分别为 `+0.017872/+0.003533`，对应 mean F1 增益为 `+0.032723/+0.006431`；但 late 两档平均均更高。DEP 已完成 12 点 uniform 预算扫描、raw/floor50 消融、单 seed 六策略和 low/boundary 四 seed paired uniform/probing 验证；raw probing 的 4/4 seed 塌缩与 floor50 恢复共同证明逐层最低保护约束不可省略。
+10. 量化下一步：三主任务的第一轮迁移验证已完成，应先冻结现有 probing 映射、floor 和预算，整理 SemEval/NER/DEP 的跨任务 paired-BOP 图表与统计，再决定是否只补少量强对照 seed。第一版主方法仍定位为 equal-BOP constrained probing-guided allocation；最终论文必须同时呈现 SemEval 的正面结果、NER 的 late 强对照和 DEP 的 floor 必要性。reconstruction-guided/L_PTH 可选，不作为当前前置项；QAT 也不是当前优先项。
 
 ## 维护要求
 

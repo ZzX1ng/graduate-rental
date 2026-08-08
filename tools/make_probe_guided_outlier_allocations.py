@@ -36,8 +36,8 @@ def random_shape(seed, layer_count):
     return normalize_mean([math.exp(generator.gauss(0.0, 0.65)) for _ in range(layer_count)])
 
 
-def match_bop(shape, base_weight_ratio, base_activation_ratio):
-    """Scale both ratio vectors so mean(w + a + w*a) equals uniform BOP."""
+def match_bop(shape, base_weight_ratio, base_activation_ratio, floor_fraction=0.0):
+    """Add a uniform floor and match mean(w + a + w*a) to uniform BOP."""
     target = (
         base_weight_ratio
         + base_activation_ratio
@@ -45,16 +45,25 @@ def match_bop(shape, base_weight_ratio, base_activation_ratio):
     )
     mean_shape = sum(shape) / len(shape)
     mean_shape_sq = sum(value * value for value in shape) / len(shape)
-    linear = (base_weight_ratio + base_activation_ratio) * mean_shape
-    quadratic = base_weight_ratio * base_activation_ratio * mean_shape_sq
+    cross = base_weight_ratio * base_activation_ratio
+    linear = (
+        (base_weight_ratio + base_activation_ratio) * mean_shape
+        + 2.0 * cross * floor_fraction * mean_shape
+    )
+    quadratic = cross * mean_shape_sq
+    constant = (
+        (base_weight_ratio + base_activation_ratio) * floor_fraction
+        + cross * floor_fraction * floor_fraction
+        - target
+    )
     if quadratic == 0:
-        scale = target / linear
+        scale = -constant / linear
     else:
-        scale = (-linear + math.sqrt(linear * linear + 4.0 * quadratic * target)) / (
-            2.0 * quadratic
-        )
-    weights = [scale * base_weight_ratio * value for value in shape]
-    activations = [scale * base_activation_ratio * value for value in shape]
+        discriminant = linear * linear - 4.0 * quadratic * constant
+        scale = (-linear + math.sqrt(discriminant)) / (2.0 * quadratic)
+    factors = [floor_fraction + scale * value for value in shape]
+    weights = [base_weight_ratio * value for value in factors]
+    activations = [base_activation_ratio * value for value in factors]
     actual = sum(
         weight + activation + weight * activation
         for weight, activation in zip(weights, activations)
@@ -79,7 +88,19 @@ def main():
     parser.add_argument("--probing-csv", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--task", default="semeval")
+    parser.add_argument("--low-weight-ratio", type=float, default=0.001)
+    parser.add_argument("--low-activation-ratio", type=float, default=0.005)
+    parser.add_argument("--boundary-weight-ratio", type=float, default=0.0025)
+    parser.add_argument("--boundary-activation-ratio", type=float, default=0.01)
+    parser.add_argument(
+        "--shape-floor",
+        type=float,
+        default=0.0,
+        help="Minimum fraction of each uniform W/A ratio reserved for every layer.",
+    )
     args = parser.parse_args()
+    if not 0.0 <= args.shape_floor < 1.0:
+        parser.error("--shape-floor must be in [0, 1)")
 
     raw_scores = load_fixed_probe(args.probing_csv, args.task)
     smoothed_scores = moving_average_three(raw_scores)
@@ -96,15 +117,21 @@ def main():
         "random_s43": random_shape(43, layer_count),
     }
     budgets = {
-        "low": (0.001, 0.005),
-        "boundary": (0.0025, 0.01),
+        "low": (args.low_weight_ratio, args.low_activation_ratio),
+        "boundary": (
+            args.boundary_weight_ratio,
+            args.boundary_activation_ratio,
+        ),
     }
     allocations = []
     for budget_name, (weight_ratio, activation_ratio) in budgets.items():
         target = weight_ratio + activation_ratio + weight_ratio * activation_ratio
         for strategy, shape in shapes.items():
             weights, activations, nominal_bop = match_bop(
-                shape, weight_ratio, activation_ratio
+                shape,
+                weight_ratio,
+                activation_ratio,
+                floor_fraction=args.shape_floor,
             )
             allocations.append(
                 {
@@ -123,6 +150,7 @@ def main():
         "task": args.task,
         "mapping": "encoder block l uses fixed-probe representation L(l+1)",
         "probe_preprocessing": "three-point moving average, then bounded exponential allocation",
+        "shape_floor_fraction": args.shape_floor,
         "bop_model": "mean_l(w_l + a_l + w_l*a_l) for W4A4 with outlier8",
         "raw_probe_scores_l1_l24": raw_scores,
         "smoothed_probe_scores_l1_l24": smoothed_scores,

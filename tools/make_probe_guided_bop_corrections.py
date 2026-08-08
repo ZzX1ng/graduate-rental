@@ -11,11 +11,15 @@ def load_json(path):
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def run_name(item, run_tag):
+def run_name(item, run_tag, run_suffix):
     prefix = f"ptq_pg_w4a4_out8_{item['budget']}_{item['strategy']}"
     if run_tag:
         prefix += f"_{run_tag}"
-    return f"{prefix}_cal16_semeval_e10"
+    return f"{prefix}_{run_suffix}"
+
+
+def source_run_name(item, run_tag, run_suffix):
+    return item.get("source_run", run_name(item, run_tag, run_suffix))
 
 
 def solve_scale(runtime_totals, target_bop):
@@ -38,6 +42,7 @@ def main():
     parser.add_argument("--run-root", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--run-tag", default="")
+    parser.add_argument("--run-suffix", default="cal16_semeval_e10")
     args = parser.parse_args()
 
     source = load_json(args.allocations)
@@ -45,9 +50,8 @@ def main():
     for item in source["allocations"]:
         if item["strategy"] != "uniform":
             continue
-        summary = load_json(
-            args.run_root / run_name(item, args.run_tag) / "quant_summary.json"
-        )
+        source_run = source_run_name(item, args.run_tag, args.run_suffix)
+        summary = load_json(args.run_root / source_run / "quant_summary.json")
         uniform_bop[item["budget"]] = summary["runtime_totals"][
             "normalized_bop_overhead"
         ]
@@ -56,9 +60,8 @@ def main():
     for item in source["allocations"]:
         if item["strategy"] == "uniform":
             continue
-        summary = load_json(
-            args.run_root / run_name(item, args.run_tag) / "quant_summary.json"
-        )
+        source_run = source_run_name(item, args.run_tag, args.run_suffix)
+        summary = load_json(args.run_root / source_run / "quant_summary.json")
         totals = summary["runtime_totals"]
         measured = totals["normalized_bop_overhead"]
         target = uniform_bop[item["budget"]]
@@ -66,7 +69,7 @@ def main():
         corrected.append(
             {
                 **item,
-                "source_run": run_name(item, args.run_tag),
+                "source_run": source_run,
                 "source_measured_bop_overhead": measured,
                 "target_measured_uniform_bop_overhead": target,
                 "bop_correction_scale": scale,

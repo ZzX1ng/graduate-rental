@@ -470,7 +470,7 @@ def make_markdown(metadata: Dict[str, object], layer_rows: List[Dict[str, object
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--project-root", default="/cluster/home/zhangzx/my_project")
+    parser.add_argument("--project-root", default="/root/autodl-tmp/master-gra/my_project")
     parser.add_argument("--output-dir", default=None)
     parser.add_argument("--max-val-samples", type=int, default=512)
     parser.add_argument("--batch-size", type=int, default=2)
