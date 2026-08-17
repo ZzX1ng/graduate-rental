@@ -6,12 +6,13 @@
 
 这是一项硕士论文实验项目，核心问题是：**BERT-large 不同层对不同 NLP 任务的重要性不同，能否利用这种 layer-wise 差异指导轻量化加速，使相同平均计算/存储预算下的 layer-wise 配置优于 uniform 压缩或近似。**
 
-当前代码和实验已经支持三类已有基础，但下一步具体线性/非线性加速方法尚未最终确定：
+当前代码和实验已经支持以下已有基础，线性主线已基本确定，非线性与硬件部分仍待后续收敛：
 
 1. **Layer probing / 表征诊断**：冻结 BERT-large，只取某一层输出训练任务 head/probe classifier，用该层输出的任务指标判断该层表征是否足够可分。该方法能说明“某层表征含有多少任务信息”，但不能直接证明“后续层可以删除”或“该层一定最该保护”。若要证明删层，需要额外做 truncated BERT fine-tuning。
 2. **非线性近似基础**：已实现 GELU PWL 的 uniform 和 layer-wise 段数配置，并完成大量 SPR2、SemEval、NER、DEP、Coref 等实验。总体结论是：uniform 激进近似会损失明显，少量层保留更高精度常能恢复性能；但 layer probing 精确排序对 PWL 最优层的预测不稳定。后续非线性方法不应局限于 PWL，可继续比较 LUT-GELU、quantized LUT、分段二次、Softmax/LayerNorm 近似等硬件友好方案。
 3. **线性压缩基础**：已实现 FFN SVD low-rank 和 FFN neuron pruning 初探。uniform low-rank 呈现 rank 越高精度越好，但当前 probing-guided layer-wise low-rank 未体现稳定优势；neuron pruning 退化较明显。后续线性方法不应局限于当前 FFN 压缩，可考虑 layer-wise quantization、outlier-aware quantization、attention/FFN 结构化剪枝、低秩分解等方案。
 4. **量化主线已完成 uniform、双侧 outlier-aware PTQ 和 probing-guided 同 BOP 多 seed 验证**：NER、DEP、SemEval 的 uniform PTQ 已完成；SemEval W4A4 双侧 outlier16/outlier8 两套 30 组比例网格均已完成，outlier8 成本-精度边界更优。NER 已完成 W4A4+outlier8 的 30 点动态阈值网格、9 点固定 train calibration 超低预算扫描、8 点 INT2 压力测试，以及 low/boundary 两档预算、四 calibration seed、六策略的 88 个 pilot/BOP-fix run；probing 在两档都是 4/4 seed 优于 uniform，但 late 平均更高。DEP 已完成 12 个统一比例预算点、6 个 `floor=0` probing 点、4 个 `floor50` 定位点，以及 low/boundary 两档、四 calibration seed 的六策略 pilot/BOP-fix2 补全；pilot 中 probing 对 inverse/early/late/random 均为 4/4 seed 胜出，近似同 measured BOP 下 probing 对 uniform 在两档也均为 4/4 seed 胜出。DEP 的早期无 floor 分配会在超低预算下塌缩，`floor50` 证明逐层最低保护是必要约束；boundary 是目前最干净的六策略同成本证据，low 下 inverse/late/random 的 BOP 修正仍存在离散阈值跳变和负载失配。SemEval low budget probing 则在四 seed 中均优于 uniform、early、late 和 `random_s29`。当前不做 QAT，也不把 probing 得分直接等同于逐层数值量化敏感度；所有分类结果必须同时报告 `major` 和 `f1_micro`，不能用高 `acc` 掩盖多数类塌缩。
+5. **Fisher 数值敏感性强基线已实现并完成第一轮对照**：当前使用 empirical diagonal Fisher，将梯度平方与 W4/A4 对称量化误差平方结合，分别形成 24 层权重和激活分数。SemEval 四 seed 显示 low budget 下 probing 优于 Fisher，probe+Fisher 略优于 probing；boundary 下各方法差异很小。NER/DEP 单 seed pilot 显示 probing 与 Fisher 总体相当，但 Fisher-A 与真实单层损伤的相关性弱，固定 `beta=0.5` 的双侧融合也未稳定跨任务占优。因此当前证据支持“任务 probing 可达到传统数值敏感性基线的水平并提供互补信息”，不支持“probing 等价于 Fisher”或“融合在所有任务上最优”。
 
 目前算法主线已进一步收敛为：**以 fixed-probing-guided、equal-BOP constrained outlier-aware PTQ 加速线性计算，以 GELU 等特殊函数近似处理非线性计算，算法有效后再做协同硬件设计**。当前量化方法用 fixed probing 决定 24 层之间的相对离群值预算形状，用 measured BOP 作为全模型计算代价硬约束；它已经考虑全局 cost，但尚未把逐层 reconstruction error 纳入分配目标。第一版论文方法可以直接比较 uniform、early/late、random、inverse-probing 与 probing-guided 分配；reconstruction-guided 或 probing+reconstruction `L_PTH` 保留为可选增强，不作为当前必做前置项。
 
@@ -52,8 +53,8 @@
 - 基础模型：`bert-large-uncased`，已提前导出到本地，Slurm 作业中不再临时下载。
 - 当前环境：`anaconda3/2024.02` 模块下的 `pytorch-test` conda 环境。
 - 当前量化实验环境：租用 RTX 4090，项目路径 `/root/autodl-tmp/master-gra/my_project`，Python 环境 `/home/zhangzx/master-gra/conda-envs/graduate`；PyTorch `2.5.1+cu121`、Transformers `5.7.0`。2026-08-05 的 outlier-aware PTQ 批次均在该环境串行运行，跨配置比较使用同一 checkpoint、cache、代码和 GPU。
-- 当前量化状态（2026-08-09）：SemEval、NER、DEP 三主任务都已完成 W4A4+双侧 outlier8 的预算筛选与 probing-guided 验证。SemEval low 中 probing 是强正向结果；NER 中 probing 4/4 seed 优于 uniform，但 late 平均更高；DEP 中 `floor=0` 在超低预算下不稳定，加入 `floor50` 后已完成 low/boundary 四 seed 六策略 pilot/BOP-fix2，probing 对 uniform 和四种启发式策略均呈 4/4 seed 同向优势。统一结论是 probing 可作为任务相关预算先验，但必须与逐层最低保护和 measured-BOP 约束结合，不能把 fixed probing 分数直接当作数值量化敏感度；low 下部分启发式策略的 BOP 修正失配也必须作为方法限制报告。
-- 量化结果完整性审计（2026-08-10）：当前三个主任务共有 `512` 个有效 `quant_summary.json`，其中 SemEval `207`、NER `142`、DEP `163`。逐 run 与本地 `status.tsv` 交叉检查后，只有旧服务器 Slurm 产生的 21 个三任务 uniform PTQ 结果和 1 个 SemEval smoke 不在本地状态表；21 个 uniform 结果早已写入 uniform PTQ 表，smoke 已在作业表和 SemEval probing 小节补记。状态表中仅有的两条 `failed` 是 NER INT2 首批 `w2a4_uniform/w4a2_uniform`，均已由 repair 批次补齐并保留失败原因；另有一次 SemEval `low_multiseed1` launcher 参数错误，未启动任何模型运行、没有实验结果，随后由 `low_multiseed2` 完整替代。当前没有未归类的有效量化结果，也没有仍在运行的三任务 PTQ 进程。
+- 当前量化状态（2026-08-17）：SemEval、NER、DEP 三主任务已完成 W4A4+双侧 outlier8 的预算筛选、probing-guided 多 seed 验证、跨任务 allocation 单 seed 交换和 empirical Fisher 四 seed对照；NER 还完成 `20260810-20260813` 的 late-only low/boundary 稳健性复验。四 seed均值下，probing 在 6 个“任务 × 预算”组合中的 4 个高于 Fisher；Fisher 领先的 SemEval-boundary 与 DEP-boundary 均不足 `0.001 major`。逐 seed共 24 个 probing-Fisher 配对，probing 胜出 18 次。该证据支持 probing 与传统数值敏感性基线总体相当，并在多个低预算场景更强；不支持 probing 在所有任务预算上严格最优。
+- 量化结果完整性审计（2026-08-17）：全项目现有 `756` 个 `quant_summary.json`；按任务路径统计，SemEval `295`、NER `198`、DEP `203`，三任务合计 `696`，其余 `60` 属于其他任务或历史路径。相较上一轮 `692` 条全项目记录，本轮新增 64 条：NER/DEP Fisher 剩余三 seed 48 条，NER late-only 四新 seed 16 条；均已完成，`failures=0`。smoke 工程验证仍不计入论文正式结果，当前没有相关实验进程运行。
 - 已准备任务：**已完成端到端（数据 → cache `ms256` → 多 epoch 训练）** 的为 **`dep`、`semeval`、`ner`**：均有 **`best_model.p`** 与 **`val_metrics.json`**（`dep`×4、`semeval`×6、`ner`×4 个带 checkpoint 的 run，见各 `runs/bert-large-uncased/<task>/`）。**`spr2`**：JSONL 与 **`cache/bert-large-uncased/spr2/`**（train/val/test/val_labels，`ms256`）就绪；Slurm **`17202`–`17205`**（1/3/5/10 epoch）均已 **`COMPLETED`、`ExitCode=0`**（Walltime 见作业表），**`runs/bert-large-uncased/spr2/`** 下已有对应 **`RUN_NAME`** 与 **`best_model.p`**。**OntoNotes 四任务 `pos` / `nonterminal` / `srl` / `coref`**：JSONL 与配置已在仓库；**cache `ms512`** 已由作业 **`17206`** 完成（**`COMPLETED`**，`16:23:46`），**`cache/bert-large-uncased/{pos,nonterminal,srl,coref}/`** 含 **`train`/`val`/`test`/`val_labels`**。**`smoke_e1_ms512_*` 训练试探**（作业 **`17212`–`17215`**）均已 **`COMPLETED`、`ExitCode=0`**（Walltime 见作业表），各 **`runs/bert-large-uncased/<task>/smoke_e1_ms512_*/`** 含 **`best_model.p`** 与 **`val_metrics.json`**（默认 **早停**，进度条未必跑满 runconfig 中的名义 **`max_steps`**，见「验证集指标」一节 OntoNotes 表上方说明）。**Formal `ms512` 多 epoch（无早停）**：**`17222`–`17233`**（**12** 作业，**`NO_IMPROVEMENTS_FOR_N_EVALS=0`**）。截至 2026-06-09 文档更新：**`17222`–`17233`** 已全部 **`COMPLETED`、`ExitCode=0`**；四个 OntoNotes 任务的 formal **3/5/10 ep** run 均有 **`best_model.p`** 与 **`val_metrics.json`**。指标见「验证集指标」OntoNotes formal 表。旧作业 **`17196`**（`ms256`）于 POS 失败，不完整 cache 已删除。
 - Slurm：`dep`、`semeval`、`ner` 多轮训练均已完成（见作业表与验证集指标）。批量 test 作业 `17195` 已结束，但其 **`test_summary.tsv` 与当时各 `test_eval/test_metrics.json` 未对齐真实 test gold，不可作为有效 test**；有效 test 须用 `tools/evaluate_edge_test.py` 或 `test_edge_*.sh` 重跑（默认写入 `test_<task>.tsv`）。**`17207`**（`edge_test_real_gold`）已 **`COMPLETED`**（`00:21:56`），**`test_semeval.tsv` / `test_ner.tsv` / `test_spr2.tsv`** 已为批量行；**`dep`** 的 **`test_dep.tsv`** 已补齐 4 个 run。OntoNotes test 作业 **`17564`–`17567`**（`pos` / `nonterminal` / `srl` / `coref`）已全部 **`COMPLETED`、`ExitCode=0`**，并写入 **`test_pos.tsv` / `test_nonterminal.tsv` / `test_srl.tsv` / `test_coref.tsv`**。当前队列请用 `squeue -u "$USER"` 自查。
 - 备份状态：租用服务器独立快照使用私有仓库 `https://github.com/ZzX1ng/graduate-rental`，与旧仓库 `https://github.com/ZzX1ng/graduate` 分开；代码、README 和精简实验结果已推送。子模块 **`base_exp/jiant`**、**`tools/jiant-v1-legacy`** 仍有本地补丁未单独推送至各自上游，克隆后需应用 `patches/jiant-local-changes.patch`。
@@ -292,7 +293,7 @@ test   276
 | `17677`-`18139` | GELU PWL / layer-aware PWL / single-layer PWL 扫描 | 完成 / 部分作废 | PWL 近似整体可作为非线性特殊函数近似方向；`17772` 因 `sbatch --export` 分隔符问题只替换 12 个模块，已作废，正确配置由后续作业验证。 |
 | `18178`-`18220` | FFN intermediate pruning / low-rank 初筛 | 完成 / 部分失败后修复 | pruning 首批 shape mismatch 已修复；这些结果作为线性加速备选参考，当前论文主线暂优先转向离群值感知量化 + GELU 近似。 |
 
-### 近期关键作业表（截至 2026-08-05）
+### 近期关键作业表（截至 2026-08-17）
 
 | Job ID | 主题 | 状态 | 节点 | Walltime / Elapsed | 说明 |
 | --- | --- | --- | --- | --- | --- |
@@ -338,6 +339,11 @@ test   276
 | `20260807_low_multiseed1` | SemEval low-budget 多 seed 首次启动 | `FAILED`，未启动任何模型运行、无结果 | 租用 RTX 4090 | 2026-08-06 `19:53:53` | launcher 将 seed 列表错误传给 `env`，报 `env: '20260808': No such file or directory`；没有生成 `status.tsv` 或 run。修正后由 `20260807_low_multiseed2` 完整替代；日志：`base_exp/exp_edge/local_logs/semeval_w4a4_probe_guided_out8_low_multiseed_20260807_low_multiseed1.launcher.log`。 |
 | `20260807_low_multiseed2` | SemEval low-budget probing 多 calibration seed 复验 | `COMPLETED`，27/27，0 failed | 租用 RTX 4090 | `2026-08-06 19:55:48`-`20:24:01` | 新增 seed `20260807/08/09`；每个 seed 运行 5 个 pilot 和 4 个 measured-BOP fix，并与已有 `20260806` 汇总。状态表：`base_exp/exp_edge/local_logs/semeval_w4a4_probe_guided_out8_low_multiseed_20260807_low_multiseed2/status.tsv`。 |
 | `20260806_late_multiseed1` | SemEval low-budget late 多 seed 补充 | `COMPLETED`，6/6，0 failed | 租用 RTX 4090 | `20:41:10`-`20:46:33` | 对 seed `20260807/08/09` 各补 1 个 late pilot 和 1 个 measured-BOP fix，复用已有 uniform 锚点；四 seed 六策略汇总已重写。状态表：`base_exp/exp_edge/local_logs/semeval_w4a4_probe_guided_out8_late_multiseed_20260806_late_multiseed1/status.tsv`。 |
+| `20260810_semeval_boundary_multiseed` | SemEval boundary 四 seed 六策略补全 | `COMPLETED`，33/33，0 failed | 租用 RTX 4090 | 至 `2026-08-10 08:13:36` | probing 与 uniform 基本持平，early 平均略高；与 low 档形成“预算越紧 probing 收益越明显”的对照。 |
+| `20260810_cross_task_probe_single_seed` | 三任务 probing allocation 交换 | `COMPLETED`，24/24，0 failed | 租用 RTX 4090 | 至 `2026-08-10 11:07:44` | 固定 seed `20260806`，low/boundary 均做 pilot+BOP-fix2；DEP-low 外部分配存在严重 BOP 失配，作为负面结果保留。 |
+| `20260816_semeval_fisher_pipeline` | SemEval Fisher stage 1/2 | `COMPLETED`，0 failed | 租用 RTX 4090 | 至 `2026-08-16 20:56:19` | stage 1 验证代表层 Fisher 与单层扰动关系；stage 2 完成四 calibration seed、low/boundary 的 Fisher 与 probe+Fisher 比较。 |
+| `20260816_17_ner_dep_fisher_single_seed` | NER/DEP Fisher 单 seed pilot | `COMPLETED`，16/16，0 failed | 租用 RTX 4090 | 至 `2026-08-17 01:41:15` | 每任务 Fisher/probe+Fisher × low/boundary × pilot/BOP-fix2；仅为单 seed，不能声称统计显著。 |
+| `20260817_fisher3_late4` | NER/DEP Fisher 三 seed补全 + NER late 四新 seed复验 | `COMPLETED`，64/64，0 failed | 租用 RTX 4090 | `02:20:22`-`12:35:39`，约 `10:15:17` | Fisher seed `20260807-09` 共 48 个 PTQ run，late-only seed `20260810-13` 共 16 run；总日志：`base_exp/exp_edge/local_logs/20260817_fisher3_late4.nohup.log`。 |
 | `20260806_ner_budget_grid1` | NER W4A4 + 双侧 outlier8 动态阈值完整网格 | `COMPLETED`，30/30，0 failed | 租用 RTX 4090 | 2026-08-06 | `6×5` 比例网格全部完成；用于粗筛预算，不与固定 train calibration 正式结果直接排名。状态表：`base_exp/exp_edge/local_logs/ner_w4a4_dual_out8_grid_20260806_ner_budget_grid1/status.tsv`。 |
 | `20260807_ultralow1` / `refine1` | NER W4A4 + 双侧 outlier8 固定校准超低预算扫描 | `COMPLETED`，6/6 + 3/3，0 failed | 租用 RTX 4090 | 2026-08-07 | 找到明显性能转折区，并选定 low=`W0.03125%/A0.15625%`、boundary=`W0.04375%/A0.21875%`。状态表位于 `base_exp/exp_edge/local_logs/ner_w4a4_ultralow*_20260807_*/status.tsv`。 |
 | `20260807_int2_screen1` / `int2_uniform_repair1` | NER W2A4/W4A2 + outlier8 压力测试 | 最终 `COMPLETED`，8 个配置均有有效结果；原批次 2 个 uniform 曾失败，repair 2/2 完成 | 租用 RTX 4090 | 2026-08-07 | 原 `w2a4_uniform`/`w4a2_uniform` 因无 A-outlier 模块却触发 activation calibration 而报错，随后由 repair 批次补齐；W2A4 三个保护点均不可用，W4A2 最佳 `major=0.932899`、`f1_micro=0.878107`，但 BOP overhead 已达 `18.6231%`，不作为主线。 |
@@ -2780,6 +2786,231 @@ bash test_bert_large_edge_models.sh dep:formal_e10_ms256 semeval:formal_e10_ms25
 ls -lh base_exp/exp_edge/slurm_logs/
 ```
 
+## 2026-08-10 至 2026-08-17：跨任务分配与 Fisher 敏感性对照
+
+本节记录 2026-08-10 以后新增、旧版 README 尚未覆盖的全部正式 PTQ 结果。主路径仍为 `W4A4 + W/A-outlier8`，分类任务同时报告 `major` 和 `f1_micro`，策略比较优先使用 measured-BOP 修正后的结果。
+
+### SemEval boundary 四 seed 补全
+
+SemEval boundary 已补齐 calibration seed `20260806-20260809` 的六策略 pilot/BOP-fix2，共新增 33 个 run，0 failed。汇总如下：
+
+| 策略 | mean major | mean f1_micro | Δmajor vs uniform | major wins vs uniform |
+| --- | ---: | ---: | ---: | ---: |
+| uniform | 0.873454 | 0.770052 | 0 | - |
+| probing | 0.873451 | 0.770161 | -0.000003 | 2/4 |
+| inverse | 0.849606 | 0.726249 | -0.023848 | 0/4 |
+| early | **0.874368** | **0.771902** | **+0.000914** | 2/4 |
+| late | 0.872555 | 0.768529 | -0.000899 | 0/4 |
+| random_s29 | 0.871138 | 0.765798 | -0.002316 | 1/4 |
+
+boundary 下 probing 与 uniform 基本持平，不能声称 probing 明显领先；相比之下，SemEval low 中 probing 对 uniform 的 mean major 增益为 `+0.016640` 且 4/4 seed 胜出。两档共同支持：**预算越紧、层间取舍越强时，probing 先验更有价值；预算足够时策略差异迅速收缩。**
+
+机器可读汇总：
+
+```text
+base_exp/exp_edge/analysis/ptq/semeval_boundary_six_strategy_multiseed_20260806_09.tsv
+base_exp/exp_edge/analysis/ptq/semeval_boundary_six_strategy_multiseed_20260806_09.json
+```
+
+### 跨任务 probing allocation 交换
+
+固定 calibration seed `20260806`，在 low/boundary 两档预算下分别将 SemEval、NER、DEP 的 probing allocation 形状用于另外两个任务，并完成 pilot+BOP-fix2，共 24 run、0 failed。关键结果：
+
+- SemEval-low：自身 probing major=`0.866604`；NER allocation=`0.871531`；DEP allocation=`0.870688`。
+- NER-low：自身 probing major=`0.971855`；SemEval allocation=`0.973064`；DEP allocation=`0.956471`。
+- DEP-boundary：自身 probing major=`0.972301`；SemEval allocation=`0.966901`；NER allocation=`0.970678`。
+- DEP-low：两种外部 allocation 在 BOP-fix 后仍严重失配；SemEval/NER 来源的 measured BOP 分别比 uniform 高约 `38.1%/69.3%`，且精度明显塌缩，因此不能纳入严格同成本排名。
+
+三任务 fixed-probe 曲线 Pearson 相关系数：SemEval-NER=`0.9643`、SemEval-DEP=`0.5606`、NER-DEP=`0.5678`。这说明 SemEval 与 NER 共享明显的中高层保护形状，而 DEP 保留较强任务差异。外部 allocation 有时可超过自身 allocation，因此当前不能宣称“任务自身 probing 总是最优”；更稳妥的表述是：**probing allocation 同时包含跨任务共享的层深先验和任务特异性，后者在 DEP 上更明显。**
+
+机器可读汇总：
+
+```text
+base_exp/exp_edge/analysis/ptq/cross_task_probe_single_seed_20260806.tsv
+base_exp/exp_edge/analysis/ptq/cross_task_probe_pilot_vs_bopfix2_seed20260806.tsv
+base_exp/exp_edge/analysis/ptq/fixed_probe_curve_correlations.tsv
+base_exp/exp_edge/analysis/ptq/own_task_six_strategy_seed20260806.tsv
+```
+
+### Empirical Fisher 方法实现
+
+Fisher 对照的目标不是替代 probing，而是引入传统数值敏感性强基线，回答“语言学任务 probing 指导能否达到量化敏感性方法的效果”。实现位于：
+
+```text
+base_exp/jiant/jiant/proj/main/runscript.py
+base_exp/jiant/jiant/proj/main/modeling/primary.py
+```
+
+实现口径如下：
+
+1. 在训练集 calibration split 上冻结模型参数，不执行 optimizer update；每个 calibration seed 独立抽取 16 个 batch，计算任务损失的 empirical diagonal Fisher。
+2. 对 BERT-large 24 层、每层 6 个线性模块统计，共 144 个模块。模块级 backward hook 单独捕获输入/输出梯度，避免 Q/K/V 共用输入张量时梯度混合。
+3. 权重侧与激活侧分别计算量化敏感性：`module_score = sum(gradient^2 * W4_or_A4_symmetric_quantization_error^2)`。这里 `gradient^2` 是 diagonal Fisher 近似，乘量化误差平方后才得到与本次 W4/A4 扰动相关的分数。
+4. 模块分数按模块权重规模/MAC 近似加权聚合为 24 层 Fisher-W 与 Fisher-A 分数，再分别生成 W/A outlier allocation。
+5. `probefisher` 使用固定 `beta=0.5`：`score = 0.5*z(probing) + 0.5*z(Fisher)`；W/A 两侧分别融合并分配。SemEval/NER 不设 floor，DEP 保持 `floor50`。
+6. 所有策略保持目标任务原 low/boundary 名义预算，并通过 measured-BOP pilot/BOP-fix2 做成本校正。DEP 使用 floor-preserving 校正：每层固定保留 uniform ratio 的 50%，只缩放 floor 以上部分，避免普通全比例缩放破坏最低保护。
+7. `PTQ_LAYER_INDICES` 可只量化指定 encoder 层，用于阶段一单层扰动；未设置时保持历史 PTQ 行为不变。
+
+相关生成、校正与汇总工具：
+
+```text
+tools/make_fisher_guided_outlier_allocations.py
+tools/make_floor_preserving_bop_corrections.py
+tools/summarize_semeval_fisher_stage1.py
+tools/summarize_semeval_fisher_stage2.py
+tools/summarize_ner_dep_fisher_single_seed.py
+tools/analyze_fisher_probe_alignment.py
+```
+
+`semeval_fisher_w4a4_smoke_cal1.json` 与 `semeval_fisher_w4a4_smoke_hookfix_cal1.json` 只验证统计链路和 hook 修复，不作为正式实验结果。
+
+### Fisher 阶段一：分数与单层量化损伤
+
+SemEval 固定 seed `20260806` 和同一 500 条 validation subset，以 W32A32 为 control，在代表层 `L0/L3/L7/L11/L15/L19/L23` 分别施加单层 W4A32 与 W32A4 扰动。Fisher 分数与相对 control 的指标下降 Spearman 相关如下：
+
+| 对照 | Major drop | F1 drop |
+| --- | ---: | ---: |
+| Fisher-W vs 单层 W4 损伤 | **0.7143** | **0.7143** |
+| Fisher-A vs 单层 A4 损伤 | -0.2143 | 0.0000 |
+
+结论：Fisher-W 对权重量化损伤具有较好的排序能力，可作为有效强基线；当前 Fisher-A 不能解释代表层的激活量化损伤。后续不能笼统写成“Fisher 对权重和激活都准确”。阶段一文件：
+
+```text
+base_exp/exp_edge/analysis/ptq/semeval_fisher_stage1_representative_layers.tsv
+base_exp/exp_edge/analysis/ptq/semeval_fisher_stage1_representative_layers.json
+```
+
+### Fisher 阶段二：SemEval 四 seed 正式对照
+
+四个 calibration seed `20260806-20260809` 各自独立计算 16-batch Fisher；新增 32 个正式 PTQ run，0 failed。BOP-fix2 后最大目标误差小于 `7e-5`。
+
+| 预算 | 策略 | mean major | mean f1_micro | Δmajor vs uniform | wins vs uniform | Δmajor vs probing |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| low | uniform | 0.851623 | 0.730295 | 0 | - | -0.016640 |
+| low | probing | 0.868263 | 0.761010 | +0.016640 | 4/4 | 0 |
+| low | Fisher | 0.860204 | 0.746346 | +0.008581 | 4/4 | -0.008059 |
+| low | probe+Fisher | **0.869578** | **0.763296** | **+0.017955** | 4/4 | **+0.001315（3/4）** |
+| boundary | uniform | 0.873454 | 0.770052 | 0 | - | 约 0 |
+| boundary | probing | 0.873451 | 0.770161 | 约 0 | 2/4 | 0 |
+| boundary | Fisher | **0.874437** | **0.772179** | **+0.000983** | 2/4 | **+0.000986** |
+| boundary | probe+Fisher | 0.873394 | 0.770311 | -0.000060 | 2/4 | -0.000057 |
+
+SemEval-low 中 probing 是主要信号，Fisher 单独有效但低于 probing，二者融合比 probing 平均高 `0.001315 major` 且 3/4 seed 胜出，属于小幅互补增益。boundary 中 Fisher 平均略高，但仅 2/4 seed 且绝对差不足 `0.001`，只能视为弱证据。正式汇总：
+
+```text
+base_exp/exp_edge/analysis/ptq/semeval_fisher_stage2_multiseed_20260806_09.tsv
+base_exp/exp_edge/analysis/ptq/semeval_fisher_stage2_multiseed_20260806_09.json
+base_exp/exp_edge/analysis/ptq/semeval_fisher_w4a4_seed202608{06,07,08,09}_cal16.json
+```
+
+### NER/DEP Fisher 四 seed正式结果
+
+固定 seed `20260806`，每个任务运行 Fisher 与 probe+Fisher 的 low/boundary、pilot+BOP-fix2，共 16 run、0 failed。下表同时列出既有 probing/强对照，便于判断：
+
+| 任务/预算 | 策略 | major | f1_micro | Δmajor vs uniform | Δmajor vs probing | BOP 相对目标误差 |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| NER low | probing | 0.971855 | 0.949223 | +0.009469 | 0 | -3.00% |
+| NER low | late | **0.973704** | **0.952578** | +0.011317 | +0.001848 | -3.12% |
+| NER low | Fisher | 0.956231 | 0.920761 | **-0.006155** | -0.015624 | +0.07% |
+| NER low | probe+Fisher | 0.970425 | 0.946609 | +0.008039 | -0.001430 | -0.87% |
+| NER boundary | probing | 0.974487 | 0.953984 | +0.001711 | 0 | -0.08% |
+| NER boundary | Fisher | 0.972876 | 0.951064 | +0.000101 | -0.001611 | +0.51% |
+| NER boundary | probe+Fisher | **0.974656** | **0.954296** | +0.001880 | +0.000169 | -1.38% |
+| DEP low | probing | 0.951779 | 0.906685 | +0.003084 | 0 | +1.52% |
+| DEP low | Fisher | **0.952122** | **0.907345** | +0.003427 | +0.000342 | -0.30% |
+| DEP low | probe+Fisher | 0.950408 | 0.904027 | +0.001713 | -0.001371 | -0.43% |
+| DEP boundary | probing | 0.972301 | 0.946470 | +0.004560 | 0 | +1.57% |
+| DEP boundary | Fisher | 0.972008 | 0.945899 | +0.004267 | -0.000293 | -0.14% |
+| DEP boundary | probe+Fisher | **0.974463** | **0.950656** | +0.006722 | +0.002162 | **+3.28%，成本不公平** |
+
+NER-low 中 Fisher 甚至低于 uniform，明确不支持 Fisher 单独替代 probing；NER-boundary 融合略高，但差值极小且只有单 seed。DEP-low 是 Fisher 最干净的正向结果：BOP 略低于目标时仍比 probing 高 `0.000342 major`。DEP-boundary 融合虽然指标最高，但 BOP 高 `3.28%`，不能作为公平优势。DEP 的 Fisher/probe+Fisher allocation 均成功保持 floor50。
+
+跨 SemEval/NER/DEP 的 6 个“任务 × 预算”四 seed组合，probing 的 mean major 在 4 组高于 Fisher；Fisher 领先的 SemEval-boundary 与 DEP-boundary 分别仅高 `0.000986/0.000634`。逐 seed共有 24 个 probing-Fisher paired 比较，probing 胜出 18 次。当前可以写成：**probing-guided allocation 总体达到并通常超过 empirical Fisher，在紧预算任务上优势更明显；二者关注的信息不同，Fisher 不是 probing 的替代品。** 但不应写成 probing 在所有预算上都严格优于 Fisher，也不应把当前融合结果解释为稳定互补增益。
+
+机器可读汇总：
+
+```text
+base_exp/exp_edge/analysis/ptq/ner_dep_fisher_single_seed20260806_summary.tsv
+base_exp/exp_edge/analysis/ptq/ner_dep_fisher_single_seed20260806_summary.json
+base_exp/exp_edge/analysis/ptq/fisher_probe_alignment_seed20260806.json
+```
+
+seed `20260807-20260809` 已全部完成；每个 seed独立重算 16 calibration batch Fisher，并对 Fisher/probe+Fisher 的 low/boundary 分别执行 pilot 与 BOP-fix2。下表汇总 `20260806-20260809` 四 seed的 BOP-fix2 正式结果；`±` 后为跨 seed样本标准差。
+
+| 任务/预算 | 策略 | mean major ± std | mean f1_micro ± std | paired Δmajor vs uniform | paired Δmajor vs probing | wins vs uniform | wins vs probing | mean BOP误差 |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| NER low | uniform | 0.947047 ± 0.021864 | 0.903878 ± 0.040129 | 0 | -0.017872 | - | 0/4 | 0% |
+| NER low | probing | **0.964919 ± 0.004782** | **0.936601 ± 0.008703** | **+0.017872** | 0 | 4/4 | - | -3.52% |
+| NER low | Fisher | 0.950315 ± 0.017236 | 0.909890 ± 0.031590 | +0.003269 | **-0.014604** | 3/4 | **0/4** | +0.60% |
+| NER low | probe+Fisher | 0.961802 ± 0.006732 | 0.930906 ± 0.012267 | +0.014755 | -0.003117 | 4/4 | 0/4 | -0.82% |
+| NER boundary | uniform | 0.964895 ± 0.005303 | 0.936541 ± 0.009647 | 0 | -0.003533 | - | 0/4 | 0% |
+| NER boundary | probing | 0.968427 ± 0.005416 | 0.942972 ± 0.009847 | +0.003533 | 0 | 4/4 | - | -1.82% |
+| NER boundary | Fisher | 0.963894 ± 0.007512 | 0.934714 ± 0.013685 | -0.001001 | **-0.004533** | 3/4 | 1/4 | +0.95% |
+| NER boundary | probe+Fisher | **0.968744 ± 0.004252** | **0.943549 ± 0.007733** | +0.003849 | +0.000317 | 4/4 | 3/4 | -1.08% |
+| DEP low | uniform | 0.936152 ± 0.011060 | 0.876308 ± 0.021511 | 0 | -0.015251 | - | 0/4 | 0% |
+| DEP low | probing | **0.951403 ± 0.000493** | **0.905954 ± 0.000956** | **+0.015251** | 0 | 4/4 | - | +1.05% |
+| DEP low | Fisher | 0.944957 ± 0.007566 | 0.893428 ± 0.014705 | +0.008806 | **-0.006445** | 4/4 | 1/4 | -0.10% |
+| DEP low | probe+Fisher | 0.949504 ± 0.002593 | 0.902268 ± 0.005037 | +0.013353 | -0.001898 | 4/4 | 1/4 | +0.06% |
+| DEP boundary | uniform | 0.968081 ± 0.000824 | 0.938295 ± 0.001594 | 0 | -0.002823 | - | 0/4 | 0% |
+| DEP boundary | probing | 0.970904 ± 0.001938 | 0.943765 ± 0.003754 | +0.002823 | 0 | 4/4 | - | +0.78% |
+| DEP boundary | Fisher | 0.971538 ± 0.001015 | 0.944989 ± 0.001968 | +0.003457 | **+0.000634** | 4/4 | 2/4 | +0.82% |
+| DEP boundary | probe+Fisher | **0.973613 ± 0.000896** | **0.949012 ± 0.001735** | +0.005531 | +0.002709 | 4/4 | 4/4 | **+2.84%，成本偏高** |
+
+主要判断：
+
+1. **NER 强支持 probing 高于 Fisher。** low 中 probing 对 Fisher 4/4 seed 胜出，mean major 高 `0.014604`；boundary 为 3/4 胜出，平均高 `0.004533`。seed `20260807` 的 Fisher 明显偏低，使 Fisher 方差增大，但去掉该 seed后 probing 的平均方向仍不变。
+2. **DEP-low 同样支持 probing。** probing 对 Fisher 为 3/4 seed 胜出，mean major 高 `0.006445`；probe+Fisher 仍比 probing 低 `0.001898`。probing 的 BOP 平均比 uniform 高 `1.05%`，不是完全同成本，但该偏差远小于指标恢复幅度，仍应在图表中同时标出。
+3. **DEP-boundary 接近持平。** Fisher 比 probing 平均高 `0.000634 major`，仅 2/4 seed 胜出，属于很弱差异。probe+Fisher 虽 4/4 高于 probing，但 measured-BOP 平均高 `2.84%`、最大 `3.28%`，不能作为严格同成本优势。
+4. **固定 `beta=0.5` 融合没有稳定必要性。** 它只在 NER-boundary 小幅高于 probing，在 NER-low 和 DEP-low 均退化；结合 Fisher-A 的阶段一弱相关，当前不需要把融合设为论文主方法。
+
+机器可读汇总：
+
+```text
+base_exp/exp_edge/analysis/ptq/ner_dep_fisher_multiseed_20260806_09.detail.tsv
+base_exp/exp_edge/analysis/ptq/ner_dep_fisher_multiseed_20260806_09.summary.tsv
+base_exp/exp_edge/analysis/ptq/ner_dep_fisher_multiseed_20260806_09.json
+tools/summarize_fisher_multiseed_and_late.py
+```
+
+### NER late 四个新 seed稳健性复验
+
+seed `20260810-20260813` 只运行 late 的 low/boundary pilot+BOP-fix2。BOP-fix 目标固定为原 `20260806-20260809` 四个 uniform measured-BOP 的平均值；由于没有同 seed uniform/probing，这批结果只能验证 late 的绝对性能和校准稳定性，不能计算 paired delta。
+
+| 预算/阶段 | mean major ± std | mean f1_micro ± std | 固定 BOP目标 | mean BOP误差 | max abs BOP误差 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| low pilot | 0.966592 ± 0.006935 | 0.939645 ± 0.012632 | 0.391637% | -16.12% | 18.95% |
+| low BOP-fix2 | **0.973039 ± 0.001276** | **0.951371 ± 0.002319** | 0.391637% | -4.27% | 5.79% |
+| boundary pilot | 0.975702 ± 0.000290 | 0.956202 ± 0.000530 | 0.485385% | -10.72% | 15.48% |
+| boundary BOP-fix2 | **0.976099 ± 0.000357** | **0.956925 ± 0.000656** | 0.485385% | -2.36% | 3.84% |
+
+新 seed中 late 的 BOP-fix2 指标方差很小，尤其 boundary major std 仅 `0.000357`，说明 late 形状对 calibration seed较稳定；它也与旧四 seed late 均值 `low=0.970480 / boundary=0.974758` 的高性能趋势一致。不过新批 BOP 仍系统性低于固定目标，且没有 paired probing 对照，因此只能写成“late 是 NER 的稳定强启发式基线”，不能据此宣称其统计显著优于 probing。机器可读汇总：
+
+```text
+base_exp/exp_edge/analysis/ptq/ner_late_newseeds_20260810_13.detail.tsv
+base_exp/exp_edge/analysis/ptq/ner_late_newseeds_20260810_13.summary.tsv
+base_exp/exp_edge/analysis/ptq/ner_late_newseeds_20260810_13.json
+```
+
+### Probing 与 Fisher 的层级关系及限制
+
+24 层分数 Spearman 相关如下：
+
+| 任务 | probing vs Fisher-W | probing vs Fisher-A |
+| --- | ---: | ---: |
+| SemEval | +0.290 | -0.551 |
+| NER | -0.019 | -0.591 |
+| DEP | -0.128 | -0.340 |
+
+probing 的峰值主要位于 SemEval/NER 中高层和 DEP L12-L15；Fisher-W 多在 L18、L20-L22，Fisher-A 多在 L0-L2、L6-L7。二者低相关并非代码错误，而是测量对象不同：probing 衡量冻结层表征对任务可分性的贡献，Fisher 衡量当前模型损失对数值扰动的局部敏感性。激活 Fisher 的早层偏置与阶段一弱相关共同解释了固定 `beta=0.5` 双侧融合未稳定跨任务泛化。
+
+当前实验限制与下一步判断：
+
+1. SemEval、NER、DEP 均已有四 seed Fisher 对照；验证 probing 相对传统数值敏感性方法有效性的证据已基本完成，不需要为了这一目标继续扩 seed。
+2. Fisher-A 未通过单层扰动验证，不应继续直接以 50% 权重与 probing 融合。
+3. `probing + Fisher-W only` 仅为可选方法增强，不再是论文验证 probing 有效性的必做实验；固定 `beta=0.5` 的双侧融合不进入主方法。
+4. DEP-boundary probe+Fisher 的 mean BOP 偏差为 `+2.84%`、最大 `+3.28%`，不能直接写成同成本精度提升；若论文需要强调融合，必须先重新校正，否则只作为受成本混杂的补充结果。
+5. 当前 Fisher 是 empirical diagonal 近似和局部量化误差加权，不等价于完整 Hessian，也不应称为二阶精确最优方法。
+
 ## Git 备份与授权安全
 
 已创建 `.gitignore`，以下内容不应提交：
@@ -2824,8 +3055,9 @@ git push git@github.com:ZzX1ng/graduate.git main:main
 6. 下一阶段应先筛选非线性候选方法：优先考虑 LUT-GELU / quantized LUT-GELU / 分段二次，先在 `SPR2`、`SemEval` 做 uniform 档位，再设计同平均表项数的 layer-wise / early / late / random 对照。
 7. 同步筛选线性候选方法：优先考虑 layer-wise mixed precision quantization / outlier-aware quantization / FFN low-rank / 结构化剪枝；不建议把深度可分离卷积替代 BERT dense 层作为当前主线。
 8. 硬件设计应放在方法筛选之后展开：线性部分对应多精度 GEMM/PE 阵列和缓存数据流，非线性部分对应 LUT/PWL/PWQ 或 Softmax/LayerNorm 近似单元；论文需要同时报告任务指标和理论 MAC、存储、DSP/LUT/BRAM 资源变化。
-9. 量化当前状态：SemEval 的双侧 outlier16/outlier8 网格与四 seed probing 比较均已完成；NER 的 142 个 PTQ 结果也已全部归档，包括 30 点动态阈值网格、9 点固定校准预算扫描、8 点 INT2 压力测试及 88 个 probing pilot/BOP-fix run。NER probing 在 low/boundary 都是 4/4 seed 优于 uniform，mean major 增益分别为 `+0.017872/+0.003533`，对应 mean F1 增益为 `+0.032723/+0.006431`；但 late 两档平均均更高。DEP 已完成 12 点 uniform 预算扫描、raw/floor50 消融，以及 low/boundary 四 seed 六策略 pilot/BOP-fix2；pilot 中 probing 对 inverse/early/late/random 均 4/4 seed 胜出，近似同 BOP 下对 uniform 也两档 4/4 胜出。raw probing 的 4/4 seed 塌缩与 floor50 恢复共同证明逐层最低保护约束不可省略；low 下部分对照的 BOP 修正失配必须保留为负面结果。
-10. 量化下一步：三主任务的第一轮迁移和强对照验证已完成，应冻结现有 probing 映射、floor 和预算，优先整理 SemEval/NER/DEP 的跨任务 paired-BOP 图表、策略排名与统计，不再继续为追求更高单点分数扩展 PTQ 网格。第一版主方法仍定位为 equal-BOP constrained probing-guided allocation；最终论文必须同时呈现 SemEval 的正面结果、NER 的 late 强对照、DEP 的 floor 必要性与 boundary 六策略结果。reconstruction-guided/L_PTH 可选，不作为当前前置项；QAT 也不是当前优先项。
+9. 量化当前状态：三任务共 `696` 个 `quant_summary.json` 已完成新一轮归档。SemEval/NER/DEP 的 Fisher 四 seed强基线、NER late 四新 seed稳健性复验、跨任务 allocation 交换及既有 probing 六策略结果均已记录。probing 在 6 个任务预算组合中的 4 个 mean major 更高，并在 24 个 paired seed比较中胜出 18 次；Fisher 领先的两个 boundary 组合差值均不足 `0.001`。
+10. Fisher 主线可收尾：当前结果已足以支持“probing 与 empirical Fisher 总体相当，并在多个紧预算场景更强”。后续优先整理 paired-BOP 图、逐层 probing/Fisher allocation 图和论文统计表，不再为验证该结论继续扩 seed或新增融合方法。仅当论文要把 probe+Fisher 作为贡献点时，才需要重做 DEP-boundary 的严格 BOP 校正。
+11. 论文第一版主方法仍定位为 equal-BOP constrained probing-guided allocation。最终结果必须同时呈现 SemEval low 的正向结果、boundary 收益收缩、NER late 强对照、DEP floor 必要性、跨任务交换中的正负结果，以及 Fisher-W 有效/Fisher-A 较弱的验证。reconstruction-guided/L_PTH 与 QAT 均不是当前前置项。
 
 ## 维护要求
 

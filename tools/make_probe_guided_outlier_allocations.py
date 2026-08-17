@@ -88,6 +88,11 @@ def main():
     parser.add_argument("--probing-csv", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--task", default="semeval")
+    parser.add_argument(
+        "--probing-source-task",
+        default=None,
+        help="Task whose fixed-probing curve defines the allocation shape. Defaults to --task.",
+    )
     parser.add_argument("--low-weight-ratio", type=float, default=0.001)
     parser.add_argument("--low-activation-ratio", type=float, default=0.005)
     parser.add_argument("--boundary-weight-ratio", type=float, default=0.0025)
@@ -102,7 +107,8 @@ def main():
     if not 0.0 <= args.shape_floor < 1.0:
         parser.error("--shape-floor must be in [0, 1)")
 
-    raw_scores = load_fixed_probe(args.probing_csv, args.task)
+    probing_source_task = args.probing_source_task or args.task
+    raw_scores = load_fixed_probe(args.probing_csv, probing_source_task)
     smoothed_scores = moving_average_three(raw_scores)
     layer_count = len(smoothed_scores)
     depth = [1.0 - 2.0 * index / (layer_count - 1) for index in range(layer_count)]
@@ -148,6 +154,7 @@ def main():
 
     payload = {
         "task": args.task,
+        "probing_source_task": probing_source_task,
         "mapping": "encoder block l uses fixed-probe representation L(l+1)",
         "probe_preprocessing": "three-point moving average, then bounded exponential allocation",
         "shape_floor_fraction": args.shape_floor,

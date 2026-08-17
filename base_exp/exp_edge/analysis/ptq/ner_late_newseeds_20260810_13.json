@@ -1,0 +1,194 @@
+{
+  "detail": [
+    {
+      "budget": "low",
+      "seed": 20260810,
+      "phase": "pilot",
+      "major": 0.9566280371090439,
+      "f1_micro": 0.9214945223173707,
+      "measured_bop": 0.0031865191335397128,
+      "run_name": "ptq_pg_w4a4_out8_low_late_newseed20260810_cal16_ner_e3"
+    },
+    {
+      "budget": "low",
+      "seed": 20260810,
+      "phase": "bopfix2",
+      "major": 0.9723610874304547,
+      "f1_micro": 0.9501341474697012,
+      "measured_bop": 0.003689759003450433,
+      "run_name": "ptq_pg_w4a4_out8_low_late_bopfix2_newseed20260810_cal16_ner_e3"
+    },
+    {
+      "budget": "low",
+      "seed": 20260811,
+      "phase": "pilot",
+      "major": 0.9704976183986223,
+      "f1_micro": 0.9467636565815688,
+      "measured_bop": 0.0031742057887945803,
+      "run_name": "ptq_pg_w4a4_out8_low_late_newseed20260811_cal16_ner_e3"
+    },
+    {
+      "budget": "low",
+      "seed": 20260811,
+      "phase": "bopfix2",
+      "major": 0.9746424597499077,
+      "f1_micro": 0.9542802003400267,
+      "measured_bop": 0.003731585973573561,
+      "run_name": "ptq_pg_w4a4_out8_low_late_bopfix2_newseed20260811_cal16_ner_e3"
+    },
+    {
+      "budget": "low",
+      "seed": 20260812,
+      "phase": "pilot",
+      "major": 0.9672339646332531,
+      "f1_micro": 0.9408187134502924,
+      "measured_bop": 0.0034376068506230886,
+      "run_name": "ptq_pg_w4a4_out8_low_late_newseed20260812_cal16_ner_e3"
+    },
+    {
+      "budget": "low",
+      "seed": 20260812,
+      "phase": "bopfix2",
+      "major": 0.9717315937808865,
+      "f1_micro": 0.9489956493566601,
+      "measured_bop": 0.003804221581142873,
+      "run_name": "ptq_pg_w4a4_out8_low_late_bopfix2_newseed20260812_cal16_ner_e3"
+    },
+    {
+      "budget": "low",
+      "seed": 20260813,
+      "phase": "pilot",
+      "major": 0.9720080355766241,
+      "f1_micro": 0.9495033495033495,
+      "measured_bop": 0.003341937990391255,
+      "run_name": "ptq_pg_w4a4_out8_low_late_newseed20260813_cal16_ner_e3"
+    },
+    {
+      "budget": "low",
+      "seed": 20260813,
+      "phase": "bopfix2",
+      "major": 0.9734215436796474,
+      "f1_micro": 0.952074326188943,
+      "measured_bop": 0.003771176473467894,
+      "run_name": "ptq_pg_w4a4_out8_low_late_bopfix2_newseed20260813_cal16_ner_e3"
+    },
+    {
+      "budget": "boundary",
+      "seed": 20260810,
+      "phase": "pilot",
+      "major": 0.9757118057202158,
+      "f1_micro": 0.9562230973532375,
+      "measured_bop": 0.004102714493407515,
+      "run_name": "ptq_pg_w4a4_out8_boundary_late_newseed20260810_cal16_ner_e3"
+    },
+    {
+      "budget": "boundary",
+      "seed": 20260810,
+      "phase": "bopfix2",
+      "major": 0.9762318709513542,
+      "f1_micro": 0.9571728609259428,
+      "measured_bop": 0.004667555062155239,
+      "run_name": "ptq_pg_w4a4_out8_boundary_late_bopfix2_newseed20260810_cal16_ner_e3"
+    },
+    {
+      "budget": "boundary",
+      "seed": 20260811,
+      "phase": "pilot",
+      "major": 0.9760707182231336,
+      "f1_micro": 0.9568756573832716,
+      "measured_bop": 0.004217761635604083,
+      "run_name": "ptq_pg_w4a4_out8_boundary_late_newseed20260811_cal16_ner_e3"
+    },
+    {
+      "budget": "boundary",
+      "seed": 20260811,
+      "phase": "bopfix2",
+      "major": 0.9765424394182391,
+      "f1_micro": 0.9577387736494187,
+      "measured_bop": 0.004715616569663013,
+      "run_name": "ptq_pg_w4a4_out8_boundary_late_bopfix2_newseed20260811_cal16_ner_e3"
+    },
+    {
+      "budget": "boundary",
+      "seed": 20260812,
+      "phase": "pilot",
+      "major": 0.9756635888471766,
+      "f1_micro": 0.9561266636071593,
+      "measured_bop": 0.004632662972187922,
+      "run_name": "ptq_pg_w4a4_out8_boundary_late_newseed20260812_cal16_ner_e3"
+    },
+    {
+      "budget": "boundary",
+      "seed": 20260812,
+      "phase": "bopfix2",
+      "major": 0.9758303246126991,
+      "f1_micro": 0.9564300128416804,
+      "measured_bop": 0.004814356847057048,
+      "run_name": "ptq_pg_w4a4_out8_boundary_late_bopfix2_newseed20260812_cal16_ner_e3"
+    },
+    {
+      "budget": "boundary",
+      "seed": 20260813,
+      "phase": "pilot",
+      "major": 0.9753621876056581,
+      "f1_micro": 0.9555841057171699,
+      "measured_bop": 0.004380576914211094,
+      "run_name": "ptq_pg_w4a4_out8_boundary_late_newseed20260813_cal16_ner_e3"
+    },
+    {
+      "budget": "boundary",
+      "seed": 20260813,
+      "phase": "bopfix2",
+      "major": 0.9757894488130474,
+      "f1_micro": 0.9563583020078849,
+      "measured_bop": 0.004759898791847288,
+      "run_name": "ptq_pg_w4a4_out8_boundary_late_bopfix2_newseed20260813_cal16_ner_e3"
+    }
+  ],
+  "summary": [
+    {
+      "budget": "low",
+      "phase": "pilot",
+      "major_mean": 0.9665919139293858,
+      "major_std": 0.006934935027236623,
+      "f1_mean": 0.9396450604631453,
+      "f1_std": 0.012631703102549833,
+      "fixed_bop_target": 0.003916369187481875,
+      "bop_error_pct_mean": -16.119566782993374,
+      "bop_error_pct_max_abs": 18.950292047530038
+    },
+    {
+      "budget": "low",
+      "phase": "bopfix2",
+      "major_mean": 0.9730391711602241,
+      "major_std": 0.0012762313260734034,
+      "f1_mean": 0.9513710808388327,
+      "f1_std": 0.002318779073912726,
+      "fixed_bop_target": 0.003916369187481875,
+      "bop_error_pct_mean": -4.268837322782618,
+      "bop_error_pct_max_abs": 5.78623140933111
+    },
+    {
+      "budget": "boundary",
+      "phase": "pilot",
+      "major_mean": 0.975702075099046,
+      "major_std": 0.00029040037745034963,
+      "f1_mean": 0.9562023810152096,
+      "f1_std": 0.000529694158453734,
+      "fixed_bop_target": 0.004853849514540402,
+      "bop_error_pct_mean": -10.72180975386143,
+      "bop_error_pct_max_abs": 15.475037264397141
+    },
+    {
+      "budget": "boundary",
+      "phase": "bopfix2",
+      "major_mean": 0.976098520948835,
+      "major_std": 0.0003569783795913509,
+      "f1_mean": 0.9569249873562317,
+      "f1_std": 0.0006556984804076472,
+      "fixed_bop_target": 0.004853849514540402,
+      "bop_error_pct_mean": -2.3588019471303316,
+      "bop_error_pct_max_abs": 3.838076393326395
+    }
+  ]
+}

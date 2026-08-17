@@ -1,5 +1,5 @@
 diff --git a/jiant/proj/main/modeling/primary.py b/jiant/proj/main/modeling/primary.py
-index baec1fa..e3d41e7 100644
+index baec1fa..a1d7555 100644
 --- a/jiant/proj/main/modeling/primary.py
 +++ b/jiant/proj/main/modeling/primary.py
 @@ -46,6 +46,15 @@ def _write_outlier_ptq_runtime_stats():
@@ -36,8 +36,8 @@ index baec1fa..e3d41e7 100644
          "totals": totals,
 @@ -90,6 +105,38 @@ def _register_outlier_ptq_module(module):
          _OUTLIER_PTQ_ATEXIT_REGISTERED = True
- 
- 
+
+
 +def start_outlier_activation_calibration(jiant_model):
 +    modules = [
 +        module
@@ -83,13 +83,17 @@ index baec1fa..e3d41e7 100644
          for name, bits in (("PTQ_WEIGHT_BITS", weight_bits), ("PTQ_ACT_BITS", act_bits)):
              if bits < 2 or bits > 32:
                  raise ValueError(f"{name} must be in [2, 32], got {bits}")
-@@ -366,20 +416,33 @@ class JiantTransformersModel(metaclass=abc.ABCMeta):
+@@ -366,20 +416,54 @@ class JiantTransformersModel(metaclass=abc.ABCMeta):
          ):
              if ratio < 0 or ratio >= 1:
                  raise ValueError(f"{name} must be in [0, 1), got {ratio}")
 -        if weight_outlier_ratio > 0 and act_outlier_ratio > 0:
 -            raise ValueError("Stage-1 outlier PTQ supports only one-sided protection per run")
-         if outlier_bits <= max(weight_bits, act_bits) or outlier_bits > 32:
+-        if outlier_bits <= max(weight_bits, act_bits) or outlier_bits > 32:
++        has_requested_outliers = weight_outlier_ratio > 0 or act_outlier_ratio > 0
++        if has_requested_outliers and (
++            outlier_bits <= max(weight_bits, act_bits) or outlier_bits > 32
++        ):
              raise ValueError(
                  "PTQ_OUTLIER_BITS must be greater than both low-bit widths and at most 32"
              )
@@ -104,6 +108,24 @@ index baec1fa..e3d41e7 100644
          if layer_modules is None:
              raise ValueError("Uniform PTQ requires encoder.layer modules")
 +        layer_count = len(layer_modules)
++        layer_indices_spec = os.environ.get("PTQ_LAYER_INDICES", "").strip()
++        if layer_indices_spec:
++            selected_layer_indices = {
++                int(value.strip())
++                for value in layer_indices_spec.split(",")
++                if value.strip()
++            }
++            invalid_indices = sorted(
++                index
++                for index in selected_layer_indices
++                if index < 0 or index >= layer_count
++            )
++            if invalid_indices:
++                raise ValueError(
++                    f"PTQ_LAYER_INDICES contains invalid layers: {invalid_indices}"
++                )
++        else:
++            selected_layer_indices = set(range(layer_count))
 +        weight_layer_ratios = self._parse_ptq_layer_ratios(
 +            os.environ.get("PTQ_WEIGHT_OUTLIER_LAYER_RATIOS", ""),
 +            layer_count=layer_count,
@@ -116,19 +138,21 @@ index baec1fa..e3d41e7 100644
 +            default_ratio=act_outlier_ratio,
 +            env_name="PTQ_ACT_OUTLIER_LAYER_RATIOS",
 +        )
- 
+
          module_specs = [
              ("attention.self.query", ("attention", "self", "query")),
-@@ -392,6 +455,8 @@ class JiantTransformersModel(metaclass=abc.ABCMeta):
+@@ -392,6 +476,10 @@ class JiantTransformersModel(metaclass=abc.ABCMeta):
          replaced = 0
          replaced_names = []
          for layer_index, layer in enumerate(layer_modules):
++            if layer_index not in selected_layer_indices:
++                continue
 +            layer_weight_outlier_ratio = weight_layer_ratios[layer_index]
 +            layer_act_outlier_ratio = act_layer_ratios[layer_index]
              for suffix, path in module_specs:
                  parent = layer
                  for attr in path[:-1]:
-@@ -404,16 +469,17 @@ class JiantTransformersModel(metaclass=abc.ABCMeta):
+@@ -404,16 +492,17 @@ class JiantTransformersModel(metaclass=abc.ABCMeta):
                          f"got {type(linear)}"
                      )
                  module_name = f"encoder.layer.{layer_index}.{suffix}"
@@ -149,10 +173,10 @@ index baec1fa..e3d41e7 100644
                      )
                  else:
                      replacement = UniformFakeQuantLinear(
-@@ -430,11 +496,14 @@ class JiantTransformersModel(metaclass=abc.ABCMeta):
+@@ -430,11 +519,14 @@ class JiantTransformersModel(metaclass=abc.ABCMeta):
                  replaced += 1
                  replaced_names.append(module_name)
- 
+
 -        mode = (
 -            "single_sided_outlier_aware_fake_quant"
 -            if weight_outlier_ratio > 0 or act_outlier_ratio > 0
@@ -169,7 +193,7 @@ index baec1fa..e3d41e7 100644
          self.ptq_uniform_summary = {
              "mode": mode,
              "weight_bits": weight_bits,
-@@ -442,10 +511,12 @@ class JiantTransformersModel(metaclass=abc.ABCMeta):
+@@ -442,10 +534,12 @@ class JiantTransformersModel(metaclass=abc.ABCMeta):
              "outlier_bits": outlier_bits,
              "weight_outlier_ratio": weight_outlier_ratio,
              "act_outlier_ratio": act_outlier_ratio,
@@ -184,13 +208,14 @@ index baec1fa..e3d41e7 100644
                  else "dynamic_per_forward"
              ),
              "weight_scale": (
-@@ -454,16 +525,37 @@ class JiantTransformersModel(metaclass=abc.ABCMeta):
+@@ -454,16 +548,38 @@ class JiantTransformersModel(metaclass=abc.ABCMeta):
                  else "dynamic_from_loaded_weight"
              ),
              "act_quantile_sample_size": act_quantile_sample_size,
 +            "act_calibration_max_values": act_calibration_max_values,
              "modules_replaced": replaced,
              "module_names": replaced_names,
++            "selected_layer_indices": sorted(selected_layer_indices),
          }
          print(
              f"Installed {mode} PTQ: W{weight_bits}A{act_bits}, "
@@ -202,7 +227,7 @@ index baec1fa..e3d41e7 100644
 +            f"{max(act_layer_ratios):.6f}], outlier-bits={outlier_bits}, "
              f"modules={replaced}, target=bert_encoder_linear"
          )
- 
+
 +    @staticmethod
 +    def _parse_ptq_layer_ratios(spec, layer_count, default_ratio, env_name):
 +        if not spec.strip():
@@ -224,7 +249,7 @@ index baec1fa..e3d41e7 100644
      def _maybe_install_ffn_rank_pruning(self):
          rank_spec = os.environ.get("FFN_INTERMEDIATE_RANK", "")
          if rank_spec == "":
-@@ -774,6 +866,7 @@ class OutlierAwareFakeQuantLinear(nn.Module):
+@@ -774,6 +890,7 @@ class OutlierAwareFakeQuantLinear(nn.Module):
          act_outlier_ratio: float,
          outlier_bits: int,
          act_quantile_sample_size: int,
@@ -232,7 +257,7 @@ index baec1fa..e3d41e7 100644
      ):
          super().__init__()
          self.linear = linear
-@@ -784,6 +877,10 @@ class OutlierAwareFakeQuantLinear(nn.Module):
+@@ -784,6 +901,10 @@ class OutlierAwareFakeQuantLinear(nn.Module):
          self.act_outlier_ratio = act_outlier_ratio
          self.outlier_bits = outlier_bits
          self.act_quantile_sample_size = act_quantile_sample_size
@@ -240,10 +265,10 @@ index baec1fa..e3d41e7 100644
 +        self.activation_calibrating = False
 +        self.activation_calibration_samples = []
 +        self.activation_calibration_values = 0
- 
+
          self.weight_values = linear.weight.numel()
          self.weight_outliers = 0
-@@ -796,6 +893,9 @@ class OutlierAwareFakeQuantLinear(nn.Module):
+@@ -796,6 +917,9 @@ class OutlierAwareFakeQuantLinear(nn.Module):
          self.activation_calls = 0
          self.low_bit_macs = 0
          self.outlier_macs = 0
@@ -252,8 +277,8 @@ index baec1fa..e3d41e7 100644
 +        self.dual_outlier_macs = 0
          self.low_bit_bops = 0
          self.outlier_replacement_bops = 0
- 
-@@ -816,11 +916,19 @@ class OutlierAwareFakeQuantLinear(nn.Module):
+
+@@ -816,11 +940,19 @@ class OutlierAwareFakeQuantLinear(nn.Module):
                  )
                  self.weight_outliers = outlier_count
                  self.weight_threshold = float(top_values.min().item())
@@ -271,11 +296,11 @@ index baec1fa..e3d41e7 100644
 +        self.register_buffer("weight_outliers_per_input", weight_outliers_per_input)
 +        self.register_buffer("fixed_activation_threshold", torch.tensor(float("nan")))
          _register_outlier_ptq_module(self)
- 
+
      @staticmethod
-@@ -832,6 +940,9 @@ class OutlierAwareFakeQuantLinear(nn.Module):
+@@ -832,6 +964,9 @@ class OutlierAwareFakeQuantLinear(nn.Module):
          return quant_normal + quant_outlier
- 
+
      def _activation_outlier_mask(self, x):
 +        if torch.isfinite(self.fixed_activation_threshold):
 +            threshold = self.fixed_activation_threshold.to(device=x.device, dtype=x.dtype)
@@ -283,10 +308,10 @@ index baec1fa..e3d41e7 100644
          flat_abs = x.detach().abs().reshape(-1)
          if flat_abs.numel() > self.act_quantile_sample_size:
              stride = max(flat_abs.numel() // self.act_quantile_sample_size, 1)
-@@ -843,7 +954,43 @@ class OutlierAwareFakeQuantLinear(nn.Module):
+@@ -843,7 +978,43 @@ class OutlierAwareFakeQuantLinear(nn.Module):
          ).to(device=x.device, dtype=x.dtype)
          return flat_abs.reshape_as(x) > threshold, threshold
- 
+
 +    def start_activation_calibration(self):
 +        self.activation_calibrating = True
 +        self.activation_calibration_samples = []
@@ -327,8 +352,8 @@ index baec1fa..e3d41e7 100644
          if self.act_outlier_ratio > 0:
              act_mask, threshold = self._activation_outlier_mask(x)
              qx = self._split_fake_quant(
-@@ -874,19 +1021,38 @@ class OutlierAwareFakeQuantLinear(nn.Module):
- 
+@@ -874,19 +1045,38 @@ class OutlierAwareFakeQuantLinear(nn.Module):
+
          rows = x.numel() // self.linear.in_features
          total_macs = rows * self.linear.weight.numel()
 -        if self.weight_outlier_ratio > 0:
@@ -373,7 +398,7 @@ index baec1fa..e3d41e7 100644
          self.low_bit_bops += low_bit_bops
          self.outlier_replacement_bops += mixed_precision_bops
          return F.linear(qx, self.quant_weight, self.linear.bias)
-@@ -899,6 +1065,16 @@ class OutlierAwareFakeQuantLinear(nn.Module):
+@@ -899,6 +1089,16 @@ class OutlierAwareFakeQuantLinear(nn.Module):
              "outlier_bits": self.outlier_bits,
              "weight_target_outlier_ratio": self.weight_outlier_ratio,
              "activation_target_outlier_ratio": self.act_outlier_ratio,
@@ -390,7 +415,7 @@ index baec1fa..e3d41e7 100644
              "weight_values": self.weight_values,
              "weight_outliers": self.weight_outliers,
              "weight_actual_outlier_ratio": (
-@@ -922,6 +1098,9 @@ class OutlierAwareFakeQuantLinear(nn.Module):
+@@ -922,6 +1122,9 @@ class OutlierAwareFakeQuantLinear(nn.Module):
              "activation_calls": self.activation_calls,
              "low_bit_macs": self.low_bit_macs,
              "outlier_macs": self.outlier_macs,
@@ -401,12 +426,16 @@ index baec1fa..e3d41e7 100644
              "outlier_replacement_bops": self.outlier_replacement_bops,
              "normalized_bop_overhead": (
 diff --git a/jiant/proj/main/runscript.py b/jiant/proj/main/runscript.py
-index a71cd19..c258974 100644
+index a71cd19..132e708 100644
 --- a/jiant/proj/main/runscript.py
 +++ b/jiant/proj/main/runscript.py
-@@ -3,6 +3,11 @@ import torch
- 
- 
+@@ -1,8 +1,15 @@
++import json
+ import os
++import re
+ import torch
+
+
  import jiant.proj.main.modeling.model_setup as jiant_model_setup
 +from jiant.proj.main.modeling.primary import (
 +    finish_outlier_activation_calibration,
@@ -416,10 +445,213 @@ index a71cd19..c258974 100644
  import jiant.proj.main.runner as jiant_runner
  import jiant.proj.main.components.container_setup as container_setup
  import jiant.proj.main.metarunner as jiant_metarunner
-@@ -129,6 +134,44 @@ def setup_runner(
+@@ -14,6 +21,202 @@ import jiant.utils.python.io as py_io
+ import jiant.utils.zconf as zconf
+
+
++_FISHER_MODULE_PATTERN = re.compile(
++    r"(?:^|\.)encoder\.layer\.(\d+)\."
++    r"(attention\.self\.(?:query|key|value)|attention\.output\.dense|"
++    r"intermediate\.dense|output\.dense)$"
++)
++
++
++def _fake_quant_tensor(tensor, bits):
++    qmax = (1 << (bits - 1)) - 1
++    max_abs = tensor.detach().abs().max()
++    if max_abs.item() == 0:
++        return tensor.detach()
++    scale = max_abs / qmax
++    return torch.clamp(torch.round(tensor.detach() / scale), -qmax, qmax) * scale
++
++
++def _fisher_linear_modules(jiant_model):
++    modules = []
++    for name, module in jiant_model.named_modules():
++        match = _FISHER_MODULE_PATTERN.search(name)
++        if match and isinstance(module, torch.nn.Linear):
++            modules.append((name, int(match.group(1)), match.group(2), module))
++    modules.sort(key=lambda item: (item[1], item[2]))
++    if len(modules) != 144:
++        raise RuntimeError(f"Expected 144 BERT encoder linear modules, found {len(modules)}")
++    return modules
++
++
++def maybe_collect_fisher_sensitivity(runner):
++    output_path = os.environ.get("FISHER_STATS_PATH", "").strip()
++    if not output_path:
++        return
++    calibration_batches = int(os.environ.get("FISHER_CALIBRATION_BATCHES", "16"))
++    weight_bits = int(os.environ.get("FISHER_WEIGHT_BITS", "4"))
++    activation_bits = int(os.environ.get("FISHER_ACT_BITS", "4"))
++    if calibration_batches <= 0:
++        raise ValueError("FISHER_CALIBRATION_BATCHES must be positive")
++    task_names = runner.jiant_task_container.task_run_config.train_task_list
++    if len(task_names) != 1:
++        raise RuntimeError("Fisher collection requires exactly one train task")
++    task_name = task_names[0]
++    task = runner.jiant_task_container.task_dict[task_name]
++    train_dataloader = runner.get_train_dataloader_dict()[task_name]
++    modules = _fisher_linear_modules(runner.jiant_model)
++    stats = {}
++    pending_activation_errors = {}
++    handles = []
++
++    for name, layer, suffix, module in modules:
++        weight_error_sq = (
++            _fake_quant_tensor(module.weight, weight_bits) - module.weight.detach()
++        ).float().square()
++        stats[name] = {
++            "module_name": f"encoder.layer.{layer}.{suffix}",
++            "layer": layer,
++            "suffix": suffix,
++            "weight_values": module.weight.numel(),
++            "weight_fisher_error_sum": 0.0,
++            "weight_fisher_sum": 0.0,
++            "weight_quant_error_sum": float(weight_error_sq.sum().item()),
++            "activation_values": 0,
++            "activation_fisher_error_sum": 0.0,
++            "activation_fisher_sum": 0.0,
++            "activation_quant_error_sum": 0.0,
++        }
++        pending_activation_errors[name] = []
++
++        def capture_activation(current_module, inputs, module_name=name):
++            activation = inputs[0]
++            error_sq = (
++                _fake_quant_tensor(activation, activation_bits) - activation.detach()
++            ).float().square()
++            current = stats[module_name]
++            current["activation_values"] += activation.numel()
++            current["activation_quant_error_sum"] += float(error_sq.sum().item())
++            pending_activation_errors[module_name].append(error_sq)
++
++        def accumulate_activation(
++            current_module, gradient_inputs, gradient_outputs, module_name=name
++        ):
++            gradient = gradient_inputs[0]
++            if gradient is None:
++                raise RuntimeError(f"Missing activation gradient for {module_name}")
++            if not pending_activation_errors[module_name]:
++                raise RuntimeError(f"Missing activation error cache for {module_name}")
++            error_sq = pending_activation_errors[module_name].pop()
++            fisher = gradient.detach().float().square()
++            current = stats[module_name]
++            current["activation_fisher_error_sum"] += float(
++                (fisher * error_sq).sum().item()
++            )
++            current["activation_fisher_sum"] += float(fisher.sum().item())
++
++        handles.append(module.register_forward_pre_hook(capture_activation))
++        handles.append(module.register_full_backward_hook(accumulate_activation))
++
++    runner.jiant_model.eval()
++    runner.optimizer_scheduler.optimizer.zero_grad()
++    print(
++        f"Collecting empirical Fisher on {calibration_batches} training batches "
++        f"for task={task_name}, modules={len(modules)}"
++    )
++    try:
++        for batch_index in range(calibration_batches):
++            batch, _ = train_dataloader.pop()
++            batch = batch.to(runner.device)
++            model_output = wrap_jiant_forward(
++                jiant_model=runner.jiant_model,
++                batch=batch,
++                task=task,
++                compute_loss=True,
++            )
++            model_output.loss.backward()
++            for name, _, _, module in modules:
++                if module.weight.grad is None:
++                    raise RuntimeError(f"Missing weight gradient for {name}")
++                fisher = module.weight.grad.detach().float().square()
++                error_sq = (
++                    _fake_quant_tensor(module.weight, weight_bits)
++                    - module.weight.detach()
++                ).float().square()
++                stats[name]["weight_fisher_error_sum"] += float(
++                    (fisher * error_sq).sum().item()
++                )
++                stats[name]["weight_fisher_sum"] += float(fisher.sum().item())
++            runner.optimizer_scheduler.optimizer.zero_grad()
++            if any(pending_activation_errors.values()):
++                incomplete = [
++                    name for name, values in pending_activation_errors.items() if values
++                ]
++                raise RuntimeError(
++                    f"Unconsumed activation errors after backward: {incomplete[:3]}"
++                )
++            print(
++                f"Fisher calibration batch {batch_index + 1}/{calibration_batches}: "
++                f"loss={float(model_output.loss.detach().item()):.8f}"
++            )
++    finally:
++        for handle in handles:
++            handle.remove()
++        runner.optimizer_scheduler.optimizer.zero_grad()
++
++    module_rows = []
++    for name, _, _, _ in modules:
++        row = stats[name]
++        row["weight_score"] = row["weight_fisher_error_sum"] / max(
++            row["weight_fisher_sum"], 1e-30
++        )
++        row["activation_score"] = row["activation_fisher_error_sum"] / max(
++            row["activation_fisher_sum"], 1e-30
++        )
++        module_rows.append(row)
++
++    layers = []
++    for layer in range(24):
++        selected = [row for row in module_rows if row["layer"] == layer]
++        mac_weights = [row["weight_values"] for row in selected]
++        total_weight = sum(mac_weights)
++        layers.append(
++            {
++                "layer": layer,
++                "weight_score": sum(
++                    row["weight_score"] * mac_weight
++                    for row, mac_weight in zip(selected, mac_weights)
++                )
++                / total_weight,
++                "activation_score": sum(
++                    row["activation_score"] * mac_weight
++                    for row, mac_weight in zip(selected, mac_weights)
++                )
++                / total_weight,
++                "weight_fisher_error_sum": sum(
++                    row["weight_fisher_error_sum"] for row in selected
++                ),
++                "activation_fisher_error_sum": sum(
++                    row["activation_fisher_error_sum"] for row in selected
++                ),
++            }
++        )
++    payload = {
++        "method": "empirical diagonal Fisher times per-tensor symmetric quantization error squared",
++        "task": task_name,
++        "calibration_split": "train",
++        "calibration_batches": calibration_batches,
++        "weight_bits": weight_bits,
++        "activation_bits": activation_bits,
++        "modules": module_rows,
++        "layers": layers,
++    }
++    os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
++    with open(output_path, "w", encoding="utf-8") as writer:
++        json.dump(payload, writer, indent=2, ensure_ascii=False)
++        writer.write("\n")
++    print(f"Finished Fisher collection: stats={output_path}")
++
++
+ @zconf.run_config
+ class RunConfiguration(zconf.RunConfig):
+     # === Required parameters === #
+@@ -129,6 +332,44 @@ def setup_runner(
      return runner
- 
- 
+
+
 +def maybe_calibrate_outlier_activations(runner):
 +    calibration_batches = int(os.environ.get("PTQ_ACT_CALIBRATION_BATCHES", "0"))
 +    if calibration_batches <= 0:
@@ -461,10 +693,11 @@ index a71cd19..c258974 100644
  def run_loop(args: RunConfiguration, checkpoint=None):
      is_resumed = checkpoint is not None
      quick_init_out = initialization.quick_init(args=args, verbose=True)
-@@ -147,6 +190,7 @@ def run_loop(args: RunConfiguration, checkpoint=None):
+@@ -147,6 +388,8 @@ def run_loop(args: RunConfiguration, checkpoint=None):
          if is_resumed:
              runner.load_state(checkpoint["runner_state"])
              del checkpoint["runner_state"]
++        maybe_collect_fisher_sensitivity(runner)
 +        maybe_calibrate_outlier_activations(runner)
          checkpoint_saver = jiant_runner.CheckpointSaver(
              metadata={"args": args.to_dict()},

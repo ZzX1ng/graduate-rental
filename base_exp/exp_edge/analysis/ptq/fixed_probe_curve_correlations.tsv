@@ -1,0 +1,4 @@
+task_a	task_b	pearson
+semeval	ner	0.964345872
+semeval	dep	0.560587342
+ner	dep	0.567784757

@@ -1,0 +1,156 @@
+{
+  "baseline_major": 0.8836002620152226,
+  "baseline_f1_micro": 0.7885921231326392,
+  "rows": [
+    {
+      "layer": 0,
+      "side": "weight",
+      "fisher_score": 0.0004852048928620625,
+      "major": 0.8777121219061579,
+      "f1_micro": 0.7777777777777778,
+      "major_drop": 0.005888140109064688,
+      "f1_drop": 0.010814345354861366,
+      "run_name": "ptq_fisher_stage1_weight_layer00_seed20260806_semeval_e10"
+    },
+    {
+      "layer": 0,
+      "side": "activation",
+      "fisher_score": 0.3850505386334389,
+      "major": 0.8799084036999594,
+      "f1_micro": 0.781941309255079,
+      "major_drop": 0.0036918583152631967,
+      "f1_drop": 0.006650813877560169,
+      "run_name": "ptq_fisher_stage1_activation_layer00_seed20260806_semeval_e10"
+    },
+    {
+      "layer": 3,
+      "side": "weight",
+      "fisher_score": 0.000247528373848082,
+      "major": 0.8807073356840667,
+      "f1_micro": 0.783355947535052,
+      "major_drop": 0.0028929263311558984,
+      "f1_drop": 0.005236175597587156,
+      "run_name": "ptq_fisher_stage1_weight_layer03_seed20260806_semeval_e10"
+    },
+    {
+      "layer": 3,
+      "side": "activation",
+      "fisher_score": 0.3029864586496891,
+      "major": 0.872253020288607,
+      "f1_micro": 0.7680505415162455,
+      "major_drop": 0.011347241726615609,
+      "f1_drop": 0.020541581616393634,
+      "run_name": "ptq_fisher_stage1_activation_layer03_seed20260806_semeval_e10"
+    },
+    {
+      "layer": 7,
+      "side": "weight",
+      "fisher_score": 0.00041347980010166685,
+      "major": 0.8789138563185926,
+      "f1_micro": 0.7801354401805869,
+      "major_drop": 0.004686405696629925,
+      "f1_drop": 0.008456682952052264,
+      "run_name": "ptq_fisher_stage1_weight_layer07_seed20260806_semeval_e10"
+    },
+    {
+      "layer": 7,
+      "side": "activation",
+      "fisher_score": 0.3248223923847074,
+      "major": 0.8751474291228004,
+      "f1_micro": 0.7733812949640287,
+      "major_drop": 0.008452832892422157,
+      "f1_drop": 0.015210828168610413,
+      "run_name": "ptq_fisher_stage1_activation_layer07_seed20260806_semeval_e10"
+    },
+    {
+      "layer": 11,
+      "side": "weight",
+      "fisher_score": 0.0004889774564140202,
+      "major": 0.8599029101400232,
+      "f1_micro": 0.7457322551662174,
+      "major_drop": 0.02369735187519939,
+      "f1_drop": 0.042859867966421716,
+      "run_name": "ptq_fisher_stage1_weight_layer11_seed20260806_semeval_e10"
+    },
+    {
+      "layer": 11,
+      "side": "activation",
+      "fisher_score": 0.27692375534105657,
+      "major": 0.5948071253810823,
+      "f1_micro": 0.26542387927208166,
+      "major_drop": 0.2887931366341403,
+      "f1_drop": 0.5231682438605575,
+      "run_name": "ptq_fisher_stage1_activation_layer11_seed20260806_semeval_e10"
+    },
+    {
+      "layer": 15,
+      "side": "weight",
+      "fisher_score": 0.0004470561846232899,
+      "major": 0.8478196934320279,
+      "f1_micro": 0.7231690465223399,
+      "major_drop": 0.03578056858319467,
+      "f1_drop": 0.06542307661029922,
+      "run_name": "ptq_fisher_stage1_weight_layer15_seed20260806_semeval_e10"
+    },
+    {
+      "layer": 15,
+      "side": "activation",
+      "fisher_score": 0.26262495175745887,
+      "major": 0.8407305057593732,
+      "f1_micro": 0.7105022831050228,
+      "major_drop": 0.04286975625584932,
+      "f1_drop": 0.07808984002761632,
+      "run_name": "ptq_fisher_stage1_activation_layer15_seed20260806_semeval_e10"
+    },
+    {
+      "layer": 19,
+      "side": "weight",
+      "fisher_score": 0.00048112868342612834,
+      "major": 0.8677966342540081,
+      "f1_micro": 0.7591377694470478,
+      "major_drop": 0.015803627761214467,
+      "f1_drop": 0.02945435368559135,
+      "run_name": "ptq_fisher_stage1_weight_layer19_seed20260806_semeval_e10"
+    },
+    {
+      "layer": 19,
+      "side": "activation",
+      "fisher_score": 0.12665229314135096,
+      "major": 0.8742109082173131,
+      "f1_micro": 0.7705463182897863,
+      "major_drop": 0.009389353797909505,
+      "f1_drop": 0.018045804842852897,
+      "run_name": "ptq_fisher_stage1_activation_layer19_seed20260806_semeval_e10"
+    },
+    {
+      "layer": 23,
+      "side": "weight",
+      "fisher_score": 0.0004051853887362322,
+      "major": 0.8782817608819125,
+      "f1_micro": 0.7780925401322002,
+      "major_drop": 0.005318501133310116,
+      "f1_drop": 0.010499583000438961,
+      "run_name": "ptq_fisher_stage1_weight_layer23_seed20260806_semeval_e10"
+    },
+    {
+      "layer": 23,
+      "side": "activation",
+      "fisher_score": 0.020539553830085624,
+      "major": 0.879868077504466,
+      "f1_micro": 0.7824561403508772,
+      "major_drop": 0.00373218451075652,
+      "f1_drop": 0.006135982781761973,
+      "run_name": "ptq_fisher_stage1_activation_layer23_seed20260806_semeval_e10"
+    }
+  ],
+  "correlations": {
+    "weight": {
+      "spearman_fisher_vs_major_drop": 0.7142857142857143,
+      "spearman_fisher_vs_f1_drop": 0.7142857142857143
+    },
+    "activation": {
+      "spearman_fisher_vs_major_drop": -0.21428571428571427,
+      "spearman_fisher_vs_f1_drop": 0.0
+    }
+  }
+}

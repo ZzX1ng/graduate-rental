@@ -1,0 +1,98 @@
+[
+  {
+    "budget": "low",
+    "strategy": "uniform",
+    "major_mean": 0.8516229161202735,
+    "major_std": 0.0035207572879346195,
+    "f1_mean": 0.7302945244671971,
+    "delta_major_vs_uniform": 0.0,
+    "wins_vs_uniform": 0,
+    "delta_major_vs_probing": -0.016640334327061357,
+    "wins_vs_probing": 0,
+    "max_abs_bop_error": 0.0
+  },
+  {
+    "budget": "low",
+    "strategy": "probing",
+    "major_mean": 0.8682632504473349,
+    "major_std": 0.0012357396099593263,
+    "f1_mean": 0.7610100334859389,
+    "delta_major_vs_uniform": 0.016640334327061357,
+    "wins_vs_uniform": 4,
+    "delta_major_vs_probing": 0.0,
+    "wins_vs_probing": 0,
+    "max_abs_bop_error": 1.8684480807574892e-05
+  },
+  {
+    "budget": "low",
+    "strategy": "fisher",
+    "major_mean": 0.8602042026672387,
+    "major_std": 0.002536071945736595,
+    "f1_mean": 0.7463462918261636,
+    "delta_major_vs_uniform": 0.008581286546965272,
+    "wins_vs_uniform": 4,
+    "delta_major_vs_probing": -0.008059047780096085,
+    "wins_vs_probing": 0,
+    "max_abs_bop_error": 5.412695239060631e-05
+  },
+  {
+    "budget": "low",
+    "strategy": "probefisher",
+    "major_mean": 0.8695781420779385,
+    "major_std": 0.0009231161757500355,
+    "f1_mean": 0.7632962685816936,
+    "delta_major_vs_uniform": 0.017955225957665077,
+    "wins_vs_uniform": 4,
+    "delta_major_vs_probing": 0.0013148916306037206,
+    "wins_vs_probing": 3,
+    "max_abs_bop_error": 2.6683796326011644e-05
+  },
+  {
+    "budget": "boundary",
+    "strategy": "uniform",
+    "major_mean": 0.8734540023398093,
+    "major_std": 0.0023030568951801153,
+    "f1_mean": 0.770051699425622,
+    "delta_major_vs_uniform": 0.0,
+    "wins_vs_uniform": 0,
+    "delta_major_vs_probing": 2.726080772036399e-06,
+    "wins_vs_probing": 2,
+    "max_abs_bop_error": 0.0
+  },
+  {
+    "budget": "boundary",
+    "strategy": "probing",
+    "major_mean": 0.8734512762590373,
+    "major_std": 0.001722030238379526,
+    "f1_mean": 0.7701607633192289,
+    "delta_major_vs_uniform": -2.726080772036399e-06,
+    "wins_vs_uniform": 2,
+    "delta_major_vs_probing": 0.0,
+    "wins_vs_probing": 0,
+    "max_abs_bop_error": 5.2350057672257214e-05
+  },
+  {
+    "budget": "boundary",
+    "strategy": "fisher",
+    "major_mean": 0.8744373144252051,
+    "major_std": 0.001881023067333384,
+    "f1_mean": 0.7721786460736249,
+    "delta_major_vs_uniform": 0.0009833120853957877,
+    "wins_vs_uniform": 2,
+    "delta_major_vs_probing": 0.0009860381661678241,
+    "wins_vs_probing": 2,
+    "max_abs_bop_error": 6.951882701650494e-05
+  },
+  {
+    "budget": "boundary",
+    "strategy": "probefisher",
+    "major_mean": 0.87339446389939,
+    "major_std": 0.0021084719834070964,
+    "f1_mean": 0.7703105255267816,
+    "delta_major_vs_uniform": -5.9538440419282246e-05,
+    "wins_vs_uniform": 2,
+    "delta_major_vs_probing": -5.681235964724585e-05,
+    "wins_vs_probing": 2,
+    "max_abs_bop_error": 5.066633106303592e-05
+  }
+]

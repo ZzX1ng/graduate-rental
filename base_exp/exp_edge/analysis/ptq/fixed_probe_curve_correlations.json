@@ -1,0 +1,17 @@
+[
+  {
+    "task_a": "semeval",
+    "task_b": "ner",
+    "pearson": "0.964345872"
+  },
+  {
+    "task_a": "semeval",
+    "task_b": "dep",
+    "pearson": "0.560587342"
+  },
+  {
+    "task_a": "ner",
+    "task_b": "dep",
+    "pearson": "0.567784757"
+  }
+]

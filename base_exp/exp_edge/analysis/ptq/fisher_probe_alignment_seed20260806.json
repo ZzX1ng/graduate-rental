@@ -1,0 +1,80 @@
+[
+  {
+    "task": "semeval",
+    "spearman_probe_fisher_weight": 0.28956521739130436,
+    "spearman_probe_fisher_activation": -0.551304347826087,
+    "probe_top_layers": [
+      16,
+      17,
+      18,
+      15,
+      19
+    ],
+    "fisher_weight_top_layers": [
+      21,
+      22,
+      18,
+      20,
+      17
+    ],
+    "fisher_activation_top_layers": [
+      0,
+      1,
+      2,
+      7,
+      6
+    ]
+  },
+  {
+    "task": "ner",
+    "spearman_probe_fisher_weight": -0.019130434782608695,
+    "spearman_probe_fisher_activation": -0.591304347826087,
+    "probe_top_layers": [
+      16,
+      15,
+      18,
+      14,
+      17
+    ],
+    "fisher_weight_top_layers": [
+      21,
+      22,
+      18,
+      20,
+      0
+    ],
+    "fisher_activation_top_layers": [
+      0,
+      1,
+      7,
+      2,
+      6
+    ]
+  },
+  {
+    "task": "dep",
+    "spearman_probe_fisher_weight": -0.12782608695652173,
+    "spearman_probe_fisher_activation": -0.34,
+    "probe_top_layers": [
+      13,
+      14,
+      12,
+      15,
+      11
+    ],
+    "fisher_weight_top_layers": [
+      21,
+      22,
+      18,
+      6,
+      20
+    ],
+    "fisher_activation_top_layers": [
+      0,
+      2,
+      1,
+      7,
+      3
+    ]
+  }
+]
